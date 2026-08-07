@@ -3,12 +3,19 @@
 // Tutorial Group:
 
 using ArcaneVault.Data;
+using ArcaneVault.Models.Entities;
+using ArcaneVault.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPasswordHasher<ArcaneVaultUser>, PasswordHasher<ArcaneVaultUser>>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddDbContext<ArcaneVaultDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("ArcaneVaultDatabase")));
 
@@ -29,6 +36,7 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+app.MapControllers();
 app.MapRazorPages()
    .WithStaticAssets();
 
