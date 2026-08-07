@@ -23,5 +23,7 @@ coverage/
 
 # Logs and operating-system files
 *.log
+*.db-shm
+*.db-wal
 .DS_Store
 Thumbs.db
