@@ -1,0 +1,30 @@
+@page "{categoryCode}"
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.Categories.DetailsModel
+@{
+    ViewData["Title"] = "Category Details";
+}
+
+<h1>Category Details</h1>
+
+<dl class="row mt-4">
+    <dt class="col-sm-3">Category Code</dt>
+    <dd class="col-sm-9">@Model.Category.CategoryCode</dd>
+
+    <dt class="col-sm-3">Category Name</dt>
+    <dd class="col-sm-9">@Model.Category.CategoryName</dd>
+
+    <dt class="col-sm-3">Collection Items</dt>
+    <dd class="col-sm-9">@Model.Category.CollectionItemCount</dd>
+</dl>
+
+<a asp-page="Edit" asp-route-categoryCode="@Model.Category.CategoryCode"
+   class="btn btn-primary">Edit</a>
+<a asp-page="Delete" asp-route-categoryCode="@Model.Category.CategoryCode"
+   class="btn btn-outline-danger">Delete</a>
+<a asp-page="Index" class="btn btn-outline-secondary">Back to List</a>

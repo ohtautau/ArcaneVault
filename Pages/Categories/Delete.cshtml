@@ -1,0 +1,35 @@
+@page "{categoryCode}"
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.Categories.DeleteModel
+@{
+    ViewData["Title"] = "Delete Category";
+}
+
+<h1>Delete Category</h1>
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="alert alert-warning">
+    Are you sure you want to delete this category?
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Category Code</dt>
+    <dd class="col-sm-9">@Model.Category.CategoryCode</dd>
+
+    <dt class="col-sm-3">Category Name</dt>
+    <dd class="col-sm-9">@Model.Category.CategoryName</dd>
+
+    <dt class="col-sm-3">Collection Items</dt>
+    <dd class="col-sm-9">@Model.Category.CollectionItemCount</dd>
+</dl>
+
+<form method="post">
+    <input type="hidden" name="categoryCode" value="@Model.Category.CategoryCode" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

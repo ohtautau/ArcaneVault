@@ -1,0 +1,41 @@
+@page "{categoryCode}"
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.Categories.EditModel
+@{
+    ViewData["Title"] = "Edit Category";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <h1>Edit Category</h1>
+
+        <form method="post">
+            <input type="hidden" name="categoryCode" value="@Model.CategoryCode" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Category Code</label>
+                <input value="@Model.CategoryCode" class="form-control" disabled />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.CategoryName" class="form-label"></label>
+                <input asp-for="Input.CategoryName" class="form-control" />
+                <span asp-validation-for="Input.CategoryName" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="Details" asp-route-categoryCode="@Model.CategoryCode"
+               class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
