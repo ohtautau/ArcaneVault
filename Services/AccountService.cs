@@ -20,6 +20,48 @@ public class AccountService(
     private const int UserRoleId = 1;
     private const string UserRoleName = "User";
 
+    public async Task<LoginResult> LoginAsync(
+        LoginRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userName = request.UserName.Trim();
+        var user = await dbContext.ArcaneVaultUsers
+            .Include(account => account.Role)
+            .SingleOrDefaultAsync(
+                account => account.UserName == userName,
+                cancellationToken);
+
+        if (user is null)
+        {
+            return new LoginResult(LoginStatus.InvalidCredentials);
+        }
+
+        var verificationResult = passwordHasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash,
+            request.Password);
+
+        if (verificationResult == PasswordVerificationResult.Failed)
+        {
+            return new LoginResult(LoginStatus.InvalidCredentials);
+        }
+
+        if (verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var response = new LoginResponse
+        {
+            UserName = user.UserName,
+            RoleName = user.Role.RoleName,
+            Message = "Login successful."
+        };
+
+        return new LoginResult(LoginStatus.Success, response);
+    }
+
     public async Task<RegistrationResult> RegisterAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default)
