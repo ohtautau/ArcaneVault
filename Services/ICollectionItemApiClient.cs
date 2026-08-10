@@ -11,6 +11,7 @@ namespace ArcaneVault.Services;
 public interface ICollectionItemApiClient
 {
     Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetAllAsync(
+        string? search = null,
         CancellationToken cancellationToken = default);
 
     Task<ApiResult<CollectionItemResponse>> GetByIdAsync(

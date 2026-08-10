@@ -21,11 +21,13 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
     [ProducesResponseType<IReadOnlyList<CollectionItemResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<CollectionItemResponse>>> GetAll(
+        [FromQuery] string? search,
         CancellationToken cancellationToken)
     {
         var items = await collectionItemService.GetAllAsync(
             CurrentUserName,
             User.IsInRole("Staff"),
+            search,
             cancellationToken);
         return Ok(items);
     }

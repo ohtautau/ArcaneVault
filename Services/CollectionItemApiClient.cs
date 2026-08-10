@@ -17,10 +17,13 @@ public class CollectionItemApiClient(
     private const string AuthenticationCookieName = ".ArcaneVault.Auth";
 
     public Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetAllAsync(
+        string? search = null,
         CancellationToken cancellationToken = default) =>
         SendAsync<IReadOnlyList<CollectionItemResponse>>(
             HttpMethod.Get,
-            "api/collection-items",
+            string.IsNullOrWhiteSpace(search)
+                ? "api/collection-items"
+                : $"api/collection-items?search={Uri.EscapeDataString(search.Trim())}",
             null,
             cancellationToken);
 

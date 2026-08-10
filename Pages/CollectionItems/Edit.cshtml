@@ -19,6 +19,11 @@ Tutorial Group:
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
+                <label class="form-label">Item ID</label>
+                <input class="form-control" value="@Model.ItemId" disabled />
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="Input.ItemName" class="form-label"></label>
                 <input asp-for="Input.ItemName" class="form-control" />
                 <span asp-validation-for="Input.ItemName" class="text-danger"></span>
