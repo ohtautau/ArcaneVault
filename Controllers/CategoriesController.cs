@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ArcaneVault.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Staff")]
+[Authorize]
 [Route("api/categories")]
 public class CategoriesController(ICategoryService categoryService) : ControllerBase
 {
@@ -46,6 +46,7 @@ public class CategoriesController(ICategoryService categoryService) : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Staff")]
     [ProducesResponseType<CategoryResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -80,6 +81,7 @@ public class CategoriesController(ICategoryService categoryService) : Controller
     }
 
     [HttpPut("{categoryCode}")]
+    [Authorize(Roles = "Staff")]
     [ProducesResponseType<CategoryResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -114,6 +116,7 @@ public class CategoriesController(ICategoryService categoryService) : Controller
     }
 
     [HttpDelete("{categoryCode}")]
+    [Authorize(Roles = "Staff")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
