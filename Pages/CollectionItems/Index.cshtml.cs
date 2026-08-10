@@ -13,11 +13,14 @@ namespace ArcaneVault.Pages.CollectionItems;
 public class IndexModel(ICollectionItemApiClient collectionItemApiClient)
     : CollectionItemPageModel
 {
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
     public IReadOnlyList<CollectionItemResponse> Items { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        var result = await collectionItemApiClient.GetAllAsync(cancellationToken);
+        var result = await collectionItemApiClient.GetAllAsync(Search, cancellationToken);
         if (result.IsSuccess && result.Value is not null)
         {
             Items = result.Value;

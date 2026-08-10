@@ -17,14 +17,35 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
     public async Task<IReadOnlyList<CollectionItemResponse>> GetAllAsync(
         string userName,
         bool isStaff,
-        CancellationToken cancellationToken = default) =>
-        await ProjectResponses(
-                dbContext.CollectionItems
-                    .AsNoTracking()
-                    .Where(item => isStaff || item.UserName == userName))
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.CollectionItems
+            .AsNoTracking()
+            .Where(item => isStaff || item.UserName == userName);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchTerm = search.Trim();
+            var likePattern = $"%{EscapeLikePattern(searchTerm)}%";
+            var isNumber = int.TryParse(searchTerm, out var number);
+
+            query = query.Where(item =>
+                EF.Functions.Like(item.ItemName, likePattern, "\\")
+                || EF.Functions.Like(item.UserName, likePattern, "\\")
+                || (isNumber && (item.ItemId == number
+                    || item.StartingQuantity == number
+                    || item.CurrentQuantity == number))
+                || item.CollectionItemCategories.Any(link =>
+                    EF.Functions.Like(link.CategoryCode, likePattern, "\\")
+                    || EF.Functions.Like(link.Category.CategoryName, likePattern, "\\")));
+        }
+
+        return await ProjectResponses(query)
             .OrderBy(item => item.ItemName)
             .ThenBy(item => item.ItemId)
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<CollectionItemResult> GetByIdAsync(
         int itemId,
@@ -234,4 +255,10 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
             .Select(code => code.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+    private static string EscapeLikePattern(string value) =>
+        value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
 }

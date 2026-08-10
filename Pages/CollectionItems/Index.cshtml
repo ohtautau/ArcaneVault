@@ -24,9 +24,35 @@ Tutorial Group:
 
 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-sm-8 col-md-6">
+        <label asp-for="Search" class="visually-hidden">Search collection items</label>
+        <input asp-for="Search" class="form-control"
+               placeholder="Search any item field or category" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">Search</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search))
+        {
+            <a asp-page="Index" class="btn btn-outline-secondary">Clear</a>
+        }
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.Search))
+{
+    <p class="text-muted">
+        @Model.Items.Count result(s) for <strong>@Model.Search.Trim()</strong>
+    </p>
+}
+
 @if (Model.Items.Count == 0)
 {
-    <div class="alert alert-info">No collection items have been added.</div>
+    <div class="alert alert-info">
+        @(string.IsNullOrWhiteSpace(Model.Search)
+            ? "No collection items have been added."
+            : "No collection items match your search.")
+    </div>
 }
 else
 {
@@ -34,6 +60,7 @@ else
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Name</th>
                     @if (User.IsInRole("Staff"))
                     {
@@ -49,6 +76,7 @@ else
                 @foreach (var item in Model.Items)
                 {
                     <tr>
+                        <td>@item.ItemId</td>
                         <td>@item.ItemName</td>
                         @if (User.IsInRole("Staff"))
                         {

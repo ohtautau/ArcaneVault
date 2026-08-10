@@ -13,6 +13,7 @@ public interface ICollectionItemService
     Task<IReadOnlyList<CollectionItemResponse>> GetAllAsync(
         string userName,
         bool isStaff,
+        string? search,
         CancellationToken cancellationToken = default);
 
     Task<CollectionItemResult> GetByIdAsync(
