@@ -1,0 +1,36 @@
+@page "{itemId:int}"
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.CollectionItems.DetailsModel
+@{
+    ViewData["Title"] = "Collection Item Details";
+}
+
+<h1>Collection Item Details</h1>
+
+<dl class="row mt-4">
+    <dt class="col-sm-3">Item Name</dt>
+    <dd class="col-sm-9">@Model.Item.ItemName</dd>
+
+    <dt class="col-sm-3">Owner</dt>
+    <dd class="col-sm-9">@Model.Item.UserName</dd>
+
+    <dt class="col-sm-3">Starting Quantity</dt>
+    <dd class="col-sm-9">@Model.Item.StartingQuantity</dd>
+
+    <dt class="col-sm-3">Current Quantity</dt>
+    <dd class="col-sm-9">@Model.Item.CurrentQuantity</dd>
+
+    <dt class="col-sm-3">Categories</dt>
+    <dd class="col-sm-9">
+        @string.Join(", ", Model.Item.Categories.Select(category => category.CategoryName))
+    </dd>
+</dl>
+
+<a asp-page="Edit" asp-route-itemId="@Model.Item.ItemId" class="btn btn-primary">Edit</a>
+<a asp-page="Delete" asp-route-itemId="@Model.Item.ItemId" class="btn btn-outline-danger">Delete</a>
+<a asp-page="Index" class="btn btn-outline-secondary">Back to List</a>

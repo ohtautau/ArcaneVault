@@ -20,6 +20,8 @@ builder.Services.AddScoped<IPasswordHasher<ArcaneVaultUser>, PasswordHasher<Arca
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryApiClient, CategoryApiClient>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICollectionItemApiClient, CollectionItemApiClient>();
+builder.Services.AddScoped<ICollectionItemService, CollectionItemService>();
 builder.Services.AddDbContext<ArcaneVaultDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("ArcaneVaultDatabase")));
 builder.Services

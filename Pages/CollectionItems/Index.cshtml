@@ -1,0 +1,73 @@
+@page
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.CollectionItems.IndexModel
+@{
+    ViewData["Title"] = User.IsInRole("Staff") ? "Collection Items" : "My Collection";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+        <p class="text-muted mb-0">
+            @(User.IsInRole("Staff")
+                ? "View and manage collection items for all users."
+                : "View and manage the items in your collection.")
+        </p>
+    </div>
+    <a asp-page="Create" class="btn btn-primary">Add Collection Item</a>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-info">No collection items have been added.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    @if (User.IsInRole("Staff"))
+                    {
+                        <th>Owner</th>
+                    }
+                    <th>Starting</th>
+                    <th>Current</th>
+                    <th>Categories</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.ItemName</td>
+                        @if (User.IsInRole("Staff"))
+                        {
+                            <td>@item.UserName</td>
+                        }
+                        <td>@item.StartingQuantity</td>
+                        <td>@item.CurrentQuantity</td>
+                        <td>@string.Join(", ", item.Categories.Select(category => category.CategoryName))</td>
+                        <td class="text-end">
+                            <a asp-page="Details" asp-route-itemId="@item.ItemId"
+                               class="btn btn-sm btn-outline-secondary">Details</a>
+                            <a asp-page="Edit" asp-route-itemId="@item.ItemId"
+                               class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a asp-page="Delete" asp-route-itemId="@item.ItemId"
+                               class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,237 @@
+// Name:
+// Student Admin No.:
+// Tutorial Group:
+
+using ArcaneVault.Data;
+using ArcaneVault.Models.Entities;
+using ArcaneVault.Models.Requests;
+using ArcaneVault.Models.Responses;
+using ArcaneVault.Models.Results;
+using Microsoft.EntityFrameworkCore;
+
+namespace ArcaneVault.Services;
+
+public class CollectionItemService(ArcaneVaultDbContext dbContext)
+    : ICollectionItemService
+{
+    public async Task<IReadOnlyList<CollectionItemResponse>> GetAllAsync(
+        string userName,
+        bool isStaff,
+        CancellationToken cancellationToken = default) =>
+        await ProjectResponses(
+                dbContext.CollectionItems
+                    .AsNoTracking()
+                    .Where(item => isStaff || item.UserName == userName))
+            .OrderBy(item => item.ItemName)
+            .ThenBy(item => item.ItemId)
+            .ToListAsync(cancellationToken);
+
+    public async Task<CollectionItemResult> GetByIdAsync(
+        int itemId,
+        string userName,
+        bool isStaff,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.CollectionItems
+            .AsNoTracking()
+            .SingleOrDefaultAsync(existing => existing.ItemId == itemId, cancellationToken);
+
+        if (item is null)
+        {
+            return new CollectionItemResult(CollectionItemStatus.NotFound);
+        }
+
+        if (!isStaff && !string.Equals(item.UserName, userName, StringComparison.OrdinalIgnoreCase))
+        {
+            return new CollectionItemResult(CollectionItemStatus.Forbidden);
+        }
+
+        var response = await ProjectResponses(
+                dbContext.CollectionItems
+                    .AsNoTracking()
+                    .Where(existing => existing.ItemId == itemId))
+            .SingleAsync(cancellationToken);
+
+        return new CollectionItemResult(CollectionItemStatus.Success, response);
+    }
+
+    public async Task<CollectionItemResult> CreateAsync(
+        string userName,
+        CreateCollectionItemRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var categoryCodes = NormalizeCategoryCodes(request.CategoryCodes);
+        var invalidCodes = await GetInvalidCategoryCodesAsync(categoryCodes, cancellationToken);
+        if (invalidCodes.Count > 0)
+        {
+            return new CollectionItemResult(
+                CollectionItemStatus.InvalidCategories,
+                InvalidCategoryCodes: invalidCodes);
+        }
+
+        var item = new CollectionItem
+        {
+            ItemName = request.ItemName.Trim(),
+            StartingQuantity = request.StartingQuantity,
+            CurrentQuantity = request.StartingQuantity,
+            UserName = userName,
+            CollectionItemCategories = categoryCodes
+                .Select(code => new CollectionItemCategory { CategoryCode = code })
+                .ToList()
+        };
+        dbContext.CollectionItems.Add(item);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return new CollectionItemResult(CollectionItemStatus.Conflict);
+        }
+
+        return await GetByIdAsync(item.ItemId, userName, false, cancellationToken);
+    }
+
+    public async Task<CollectionItemResult> UpdateAsync(
+        int itemId,
+        string userName,
+        bool isStaff,
+        UpdateCollectionItemRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.CollectionItems
+            .Include(existing => existing.CollectionItemCategories)
+            .SingleOrDefaultAsync(existing => existing.ItemId == itemId, cancellationToken);
+
+        if (item is null)
+        {
+            return new CollectionItemResult(CollectionItemStatus.NotFound);
+        }
+
+        if (!isStaff && !string.Equals(item.UserName, userName, StringComparison.OrdinalIgnoreCase))
+        {
+            return new CollectionItemResult(CollectionItemStatus.Forbidden);
+        }
+
+        var categoryCodes = NormalizeCategoryCodes(request.CategoryCodes);
+        var invalidCodes = await GetInvalidCategoryCodesAsync(categoryCodes, cancellationToken);
+        if (invalidCodes.Count > 0)
+        {
+            return new CollectionItemResult(
+                CollectionItemStatus.InvalidCategories,
+                InvalidCategoryCodes: invalidCodes);
+        }
+
+        item.ItemName = request.ItemName.Trim();
+        item.CurrentQuantity = request.CurrentQuantity;
+
+        var requestedCodes = categoryCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removedLinks = item.CollectionItemCategories
+            .Where(link => !requestedCodes.Contains(link.CategoryCode))
+            .ToList();
+        dbContext.CollectionItemCategories.RemoveRange(removedLinks);
+
+        var existingCodes = item.CollectionItemCategories
+            .Select(link => link.CategoryCode)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var categoryCode in categoryCodes.Where(code => !existingCodes.Contains(code)))
+        {
+            item.CollectionItemCategories.Add(new CollectionItemCategory
+            {
+                ItemId = itemId,
+                CategoryCode = categoryCode
+            });
+        }
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return new CollectionItemResult(CollectionItemStatus.Conflict);
+        }
+
+        return await GetByIdAsync(itemId, userName, isStaff, cancellationToken);
+    }
+
+    public async Task<CollectionItemResult> DeleteAsync(
+        int itemId,
+        string userName,
+        bool isStaff,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.CollectionItems
+            .SingleOrDefaultAsync(existing => existing.ItemId == itemId, cancellationToken);
+
+        if (item is null)
+        {
+            return new CollectionItemResult(CollectionItemStatus.NotFound);
+        }
+
+        if (!isStaff && !string.Equals(item.UserName, userName, StringComparison.OrdinalIgnoreCase))
+        {
+            return new CollectionItemResult(CollectionItemStatus.Forbidden);
+        }
+
+        item.IsDeleted = true;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return new CollectionItemResult(CollectionItemStatus.Conflict);
+        }
+
+        return new CollectionItemResult(CollectionItemStatus.Success);
+    }
+
+    private async Task<List<string>> GetInvalidCategoryCodesAsync(
+        IReadOnlyList<string> categoryCodes,
+        CancellationToken cancellationToken)
+    {
+        if (categoryCodes.Count == 0)
+        {
+            return ["(none)"];
+        }
+
+        var existingCodes = await dbContext.Categories
+            .Where(category => categoryCodes.Contains(category.CategoryCode))
+            .Select(category => category.CategoryCode)
+            .ToListAsync(cancellationToken);
+
+        return categoryCodes
+            .Except(existingCodes, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static IQueryable<CollectionItemResponse> ProjectResponses(
+        IQueryable<CollectionItem> query) =>
+        query.Select(item => new CollectionItemResponse
+        {
+            ItemId = item.ItemId,
+            ItemName = item.ItemName,
+            StartingQuantity = item.StartingQuantity,
+            CurrentQuantity = item.CurrentQuantity,
+            UserName = item.UserName,
+            Categories = item.CollectionItemCategories
+                .OrderBy(link => link.CategoryCode)
+                .Select(link => new CollectionItemCategoryResponse
+                {
+                    CategoryCode = link.CategoryCode,
+                    CategoryName = link.Category.CategoryName
+                })
+                .ToList()
+        });
+
+    private static IReadOnlyList<string> NormalizeCategoryCodes(
+        IEnumerable<string> categoryCodes) =>
+        categoryCodes
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Select(code => code.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+}

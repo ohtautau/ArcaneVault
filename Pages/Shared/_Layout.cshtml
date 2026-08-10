@@ -32,6 +32,14 @@ Tutorial Group:
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/CollectionItems/Index">
+                                    @(User.IsInRole("Staff") ? "Collection Items" : "My Collection")
+                                </a>
+                            </li>
+                        }
                         @if (User.IsInRole("Staff"))
                         {
                             <li class="nav-item">
