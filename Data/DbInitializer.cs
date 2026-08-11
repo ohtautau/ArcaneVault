@@ -28,6 +28,7 @@ public static class DbInitializer
         }
 
         var dbContext = services.GetRequiredService<ArcaneVaultDbContext>();
+        await dbContext.Database.MigrateAsync();
         var staffRoleExists = await dbContext.ArcaneVaultUserRoles
             .AnyAsync(role =>
                 role.RoleId == StaffRoleId && role.RoleName == StaffRoleName);

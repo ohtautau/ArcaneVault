@@ -43,6 +43,9 @@ Tutorial Group:
                         @if (User.IsInRole("Staff"))
                         {
                             <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Staff/Analytics">Analytics</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-page="/Categories/Index">Category Management</a>
                             </li>
                         }

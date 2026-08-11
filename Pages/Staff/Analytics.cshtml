@@ -1,0 +1,136 @@
+@page
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.Staff.AnalyticsModel
+@{
+    ViewData["Title"] = "Analytics Dashboard";
+    var dashboard = Model.Dashboard;
+    var maximumTrend = Math.Max(1, dashboard.Trends.Select(point => point.NewUsers + point.NewCollectionItems).DefaultIfEmpty().Max());
+}
+
+<div class="analytics-heading">
+    <div>
+        <span class="analytics-eyebrow">Staff workspace</span>
+        <h1>Analytics Dashboard</h1>
+        <p>Monitor membership, collection activity, stock health and category engagement.</p>
+    </div>
+    <form method="get" class="analytics-range">
+        <label for="days">Reporting range</label>
+        <select id="days" name="days" class="form-select" onchange="this.form.submit()">
+            <option value="7" selected="@(Model.Days == 7)">Last 7 days</option>
+            <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
+            <option value="90" selected="@(Model.Days == 90)">Last 90 days</option>
+        </select>
+    </form>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<section class="analytics-cards" aria-label="Key metrics">
+    <article class="metric-card"><span>Registered users</span><strong>@dashboard.TotalUsers</strong><small>+@dashboard.NewUsers in range</small></article>
+    <article class="metric-card"><span>Collection items</span><strong>@dashboard.TotalCollectionItems</strong><small>+@dashboard.NewCollectionItems in range</small></article>
+    <article class="metric-card"><span>Categories</span><strong>@dashboard.TotalCategories</strong><small>Active catalogue groups</small></article>
+    <article class="metric-card"><span>Current quantity</span><strong>@dashboard.TotalCurrentQuantity</strong><small>@dashboard.InventoryRetentionPercentage% inventory retained</small></article>
+    <article class="metric-card metric-warning"><span>Low stock</span><strong>@dashboard.LowStockItems</strong><small>1-2 units remaining</small></article>
+    <article class="metric-card metric-danger"><span>Depleted</span><strong>@dashboard.DepletedItems</strong><small>No units remaining</small></article>
+</section>
+
+<div class="analytics-grid">
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading">
+            <div><h2>Growth activity</h2><p>New users and collection items over the selected range.</p></div>
+            <div class="chart-legend"><span class="legend-users">Users</span><span class="legend-items">Items</span></div>
+        </div>
+        @if (dashboard.Trends.All(point => point.NewUsers == 0 && point.NewCollectionItems == 0))
+        {
+            <p class="empty-state">No new activity was recorded in this period.</p>
+        }
+        else
+        {
+            <div class="trend-chart" role="img" aria-label="Daily new user and collection item activity">
+                @foreach (var point in dashboard.Trends)
+                {
+                    var userHeight = Math.Max(2, point.NewUsers * 100 / maximumTrend);
+                    var itemHeight = Math.Max(2, point.NewCollectionItems * 100 / maximumTrend);
+                    <div class="trend-day" title="@point.Date.ToString("dd MMM"): @point.NewUsers users, @point.NewCollectionItems items">
+                        <div class="trend-bars">
+                            <span class="trend-user" style="height: @(userHeight)%"></span>
+                            <span class="trend-item" style="height: @(itemHeight)%"></span>
+                        </div>
+                        @if (dashboard.RangeDays <= 7 || point.Date.DayOfWeek == DayOfWeek.Monday)
+                        {
+                            <small>@point.Date.ToString("dd MMM")</small>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Popular categories</h2><p>Share of collection items.</p></div></div>
+        @if (dashboard.PopularCategories.Count == 0)
+        {
+            <p class="empty-state">No category data is available.</p>
+        }
+        else
+        {
+            <div class="ranking-list">
+                @foreach (var category in dashboard.PopularCategories)
+                {
+                    <div class="ranking-item">
+                        <div><strong>@category.CategoryName</strong><span>@category.CollectionItemCount item(s)</span></div>
+                        <div class="progress" role="progressbar" aria-valuenow="@category.Percentage" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: @category.Percentage.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Top collectors</h2><p>Users ranked by distinct collection items.</p></div></div>
+        @if (dashboard.TopCollectors.Count == 0)
+        {
+            <p class="empty-state">No collector data is available.</p>
+        }
+        else
+        {
+            <ol class="collector-list">
+                @foreach (var collector in dashboard.TopCollectors)
+                {
+                    <li><span>@collector.UserName</span><strong>@collector.CollectionItemCount items</strong><small>@collector.CurrentQuantity units</small></li>
+                }
+            </ol>
+        }
+    </section>
+
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading"><div><h2>Recent activity</h2><p>Latest registrations and collection additions.</p></div></div>
+        @if (dashboard.RecentActivity.Count == 0)
+        {
+            <p class="empty-state">No recent activity is available.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table analytics-table">
+                    <thead><tr><th>Type</th><th>Activity</th><th>UTC time</th></tr></thead>
+                    <tbody>
+                    @foreach (var activity in dashboard.RecentActivity)
+                    {
+                        <tr><td><span class="activity-badge">@activity.ActivityType</span></td><td>@activity.Description</td><td>@activity.OccurredAtUtc.ToString("dd MMM yyyy, HH:mm")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+<p class="analytics-updated">Generated @dashboard.GeneratedAtUtc.ToString("dd MMM yyyy, HH:mm:ss") UTC</p>

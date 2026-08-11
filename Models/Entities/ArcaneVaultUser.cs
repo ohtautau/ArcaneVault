@@ -14,6 +14,8 @@ public class ArcaneVaultUser
 
     public bool IsDeleted { get; set; }
 
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
     public int RoleId { get; set; }
 
     public ArcaneVaultUserRole Role { get; set; } = null!;

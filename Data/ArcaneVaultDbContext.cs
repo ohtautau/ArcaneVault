@@ -64,6 +64,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             .IsRequired();
         entity.Property(user => user.IsDeleted)
             .HasDefaultValue(false);
+        entity.Property(user => user.CreatedAtUtc)
+            .IsRequired();
         entity.HasIndex(user => user.Email)
             .IsUnique();
         entity.HasOne(user => user.Role)
@@ -101,6 +103,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             .IsRequired();
         entity.Property(item => item.IsDeleted)
             .HasDefaultValue(false);
+        entity.Property(item => item.CreatedAtUtc)
+            .IsRequired();
         entity.Property(item => item.UserName)
             .HasMaxLength(50)
             .UseCollation("NOCASE")

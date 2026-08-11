@@ -12,6 +12,8 @@ public class CollectionItem
 
     public bool IsDeleted { get; set; }
 
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
     public int StartingQuantity { get; set; }
 
     public int CurrentQuantity { get; set; }
