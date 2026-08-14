@@ -16,8 +16,12 @@ public interface IExchangeApiClient
     Task<ApiResult<WishlistItemResponse>> UpdateWishlistItemAsync(int id, UpdateWishlistItemRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult> DeleteWishlistItemAsync(int id, CancellationToken cancellationToken = default);
     Task<ApiResult<IReadOnlyList<TradeResponse>>> GetTradesAsync(CancellationToken cancellationToken = default);
+    Task<ApiResult<TradeResponse>> GetTradeAsync(int id, CancellationToken cancellationToken = default);
     Task<ApiResult<IReadOnlyList<TradeResponse>>> GetActiveTradesAsync(CancellationToken cancellationToken = default);
+    Task<ApiResult<IReadOnlyList<TradeResponse>>> GetAllStaffTradesAsync(CancellationToken cancellationToken = default);
+    Task<ApiResult<IReadOnlyList<TradePartnerResponse>>> GetTradePartnersAsync(CancellationToken cancellationToken = default);
     Task<ApiResult<TradeResponse>> CreateTradeAsync(CreateTradeRequest request, CancellationToken cancellationToken = default);
-    Task<ApiResult<TradeResponse>> UpdateTradeStatusAsync(int id, string status, CancellationToken cancellationToken = default);
+    Task<ApiResult<TradeResponse>> UpdateTradeStatusAsync(int id, string status, string? disputeReason = null, CancellationToken cancellationToken = default);
     Task<ApiResult<TradeResponse>> StaffCancelTradeAsync(int id, string note, CancellationToken cancellationToken = default);
+    Task<ApiResult<TradeResponse>> StaffResolveTradeAsync(int id, string resolution, string note, CancellationToken cancellationToken = default);
 }

@@ -8,6 +8,11 @@ namespace ArcaneVault.Models.Requests;
 
 public class CreateCollectionItemRequest
 {
+    [StringLength(50)]
+    [Display(Name = "Item Type ID")]
+    public string? ItemTypeId { get; set; }
+
+    public bool IsNewItemType { get; set; }
     [Required(ErrorMessage = "Item name is required.")]
     [StringLength(150, MinimumLength = 2,
         ErrorMessage = "Item name must be between 2 and 150 characters.")]

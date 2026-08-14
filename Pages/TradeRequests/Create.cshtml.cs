@@ -16,12 +16,14 @@ public class CreateModel(IExchangeApiClient exchangeClient, ICollectionItemApiCl
 {
     [BindProperty] public CreateTradeRequest Input { get; set; } = new();
     public WishlistItemResponse WishlistItem { get; private set; } = new();
+    public IReadOnlyList<TradePartnerResponse> Partners { get; private set; } = [];
     public IReadOnlyList<CollectionItemResponse> OfferedItems { get; private set; } = [];
     public IReadOnlyList<CollectionItemResponse> RequestedItems { get; private set; } = [];
 
-    public async Task<IActionResult> OnGetAsync(int wishlistItemId, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(int? wishlistItemId, string? recipientUserName, CancellationToken ct)
     {
         Input.WishlistItemId = wishlistItemId;
+        Input.RecipientUserName = recipientUserName ?? string.Empty;
         return await LoadAsync(ct);
     }
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
@@ -36,20 +38,24 @@ public class CreateModel(IExchangeApiClient exchangeClient, ICollectionItemApiCl
     }
     private async Task<IActionResult> LoadAsync(CancellationToken ct)
     {
-        if (Input.WishlistItemId is not int wishlistItemId)
+        var partners = await exchangeClient.GetTradePartnersAsync(ct);
+        if (partners.IsSuccess && partners.Value is not null) Partners = partners.Value;
+        if (Input.WishlistItemId is int wishlistItemId)
         {
-            return BadRequest("A wishlist item is required to start this trade.");
+            var wish = await exchangeClient.GetWishlistItemAsync(wishlistItemId, ct);
+            if (!wish.IsSuccess || wish.Value is null) return NotFound();
+            if (string.Equals(wish.Value.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)) return BadRequest("You cannot trade against your own wishlist.");
+            WishlistItem = wish.Value;
+            Input.RecipientUserName = wish.Value.UserName;
         }
-
-        var wish = await exchangeClient.GetWishlistItemAsync(wishlistItemId, ct);
-        if (!wish.IsSuccess || wish.Value is null) return NotFound();
-        if (string.Equals(wish.Value.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)) return BadRequest("You cannot trade against your own wishlist.");
-        WishlistItem = wish.Value;
         var ownItems = await collectionClient.GetAllAsync(null, ct);
-        var theirItems = await collectionClient.GetForTradeAsync(WishlistItem.UserName, ct);
-        if (!ownItems.IsSuccess || ownItems.Value is null || !theirItems.IsSuccess || theirItems.Value is null) return Page();
+        if (!ownItems.IsSuccess || ownItems.Value is null) return Page();
         OfferedItems = ownItems.Value.Where(item => string.Equals(item.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
-        RequestedItems = theirItems.Value;
+        if (!string.IsNullOrWhiteSpace(Input.RecipientUserName))
+        {
+            var theirItems = await collectionClient.GetForTradeAsync(Input.RecipientUserName, ct);
+            if (theirItems.IsSuccess && theirItems.Value is not null) RequestedItems = theirItems.Value;
+        }
         return Page();
     }
 }

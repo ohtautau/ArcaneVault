@@ -17,5 +17,8 @@ public class Trade
     public DateTime? UpdatedAtUtc { get; set; }
     public string? StaffResolutionNote { get; set; }
     public string? ResolvedByStaffUserName { get; set; }
+    public bool RequesterConfirmedComplete { get; set; }
+    public bool RecipientConfirmedComplete { get; set; }
+    public string? DisputeReason { get; set; }
     public ICollection<TradeItem> TradeItems { get; set; } = [];
 }

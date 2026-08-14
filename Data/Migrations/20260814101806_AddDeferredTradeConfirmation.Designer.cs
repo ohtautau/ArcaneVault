@@ -3,6 +3,7 @@ using System;
 using ArcaneVault.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ArcaneVault.Data.Migrations
 {
     [DbContext(typeof(ArcaneVaultDbContext))]
-    partial class ArcaneVaultDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814101806_AddDeferredTradeConfirmation")]
+    partial class AddDeferredTradeConfirmation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
@@ -128,12 +131,6 @@ namespace ArcaneVault.Data.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ItemTypeId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .UseCollation("NOCASE");
-
                     b.Property<int>("LockedQuantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -149,8 +146,6 @@ namespace ArcaneVault.Data.Migrations
                         .UseCollation("NOCASE");
 
                     b.HasKey("ItemId");
-
-                    b.HasIndex("ItemTypeId");
 
                     b.HasIndex("UserName");
 
@@ -204,25 +199,6 @@ namespace ArcaneVault.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_CollectionItemQuantityHistory_Quantity_NonNegative", "Quantity >= 0");
                         });
-                });
-
-            modelBuilder.Entity("ArcaneVault.Models.Entities.ItemType", b =>
-                {
-                    b.Property<string>("ItemTypeId")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .UseCollation("NOCASE");
-
-                    b.Property<string>("ItemName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("ItemTypeId");
-
-                    b.HasIndex("ItemName");
-
-                    b.ToTable("ItemTypes", (string)null);
                 });
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.Trade", b =>
@@ -379,19 +355,11 @@ namespace ArcaneVault.Data.Migrations
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.CollectionItem", b =>
                 {
-                    b.HasOne("ArcaneVault.Models.Entities.ItemType", "ItemType")
-                        .WithMany("CollectionItems")
-                        .HasForeignKey("ItemTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ArcaneVault.Models.Entities.ArcaneVaultUser", "User")
                         .WithMany("CollectionItems")
                         .HasForeignKey("UserName")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("ItemType");
 
                     b.Navigation("User");
                 });
@@ -499,11 +467,6 @@ namespace ArcaneVault.Data.Migrations
                     b.Navigation("ReceivedTradeItems");
 
                     b.Navigation("TradeItems");
-                });
-
-            modelBuilder.Entity("ArcaneVault.Models.Entities.ItemType", b =>
-                {
-                    b.Navigation("CollectionItems");
                 });
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.Trade", b =>

@@ -19,6 +19,7 @@ public class CreateModel(
     public CreateCollectionItemRequest Input { get; set; } = new();
 
     public IReadOnlyList<CategoryResponse> Categories { get; private set; } = [];
+    public IReadOnlyList<ItemTypeResponse> ItemTypes { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken) =>
         await LoadCategoriesAsync(cancellationToken);
@@ -52,6 +53,8 @@ public class CreateModel(
 
     private async Task<IActionResult> LoadCategoriesAsync(CancellationToken cancellationToken)
     {
+        var typesResult = await collectionItemApiClient.GetItemTypesAsync(null, cancellationToken);
+        if (typesResult.IsSuccess && typesResult.Value is not null) ItemTypes = typesResult.Value;
         var result = await categoryApiClient.GetAllAsync(cancellationToken);
         if (result.IsSuccess && result.Value is not null)
         {

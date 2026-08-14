@@ -1,7 +1,26 @@
 @page
 @model ArcaneVault.Pages.Staff.TradesModel
 @{ ViewData["Title"] = "Trade Oversight"; }
-<h1>Trade Oversight</h1><p class="text-muted">Review all pending and accepted trades, intervene in disputes, and cancel unsafe transactions.</p>
+<h1>Trade Oversight</h1>
+<p class="text-muted">Review pending, trading, disputed, and processed trades.</p>
 <div asp-validation-summary="All" class="text-danger"></div>
-@if (Model.Trades.Count == 0) { <div class="alert alert-info">There are no active trades.</div> }
-else { @foreach (var trade in Model.Trades) { <article class="trade-card"><div class="trade-card-main"><span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span><h2 class="h5">Trade #@trade.TradeId: @trade.RequesterUserName ↔ @trade.RecipientUserName</h2><p><strong>Offered:</strong> @string.Join(", ", trade.OfferedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}"))<br/><strong>Requested:</strong> @string.Join(", ", trade.RequestedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}"))</p><small class="text-muted">Created @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small></div><form method="post" asp-page-handler="Cancel" asp-route-id="@trade.TradeId" class="trade-resolution"><label class="form-label">Intervention note</label><textarea asp-for="ResolutionNote" class="form-control mb-2" rows="2" required placeholder="Reason for Staff cancellation"></textarea><button class="btn btn-sm btn-danger">Cancel trade</button></form></article> } }
+<h2 class="h4 mt-4">Trades requiring oversight (@Model.ActiveTrades.Count)</h2>
+@if (Model.ActiveTrades.Count == 0) { <div class="alert alert-info">There are no active trades.</div> }
+else
+{
+    @foreach (var trade in Model.ActiveTrades)
+    {
+        <article class="trade-card"><div class="trade-card-main"><span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span><h3 class="h5">Trade #@trade.TradeId: @trade.RequesterUserName ↔ @trade.RecipientUserName</h3><p><strong>Offered:</strong> @string.Join(", ", trade.OfferedItems.Select(i => $"{i.ItemTypeId}: {i.TradeQuantity} × {i.ItemName}"))<br /><strong>Requested:</strong> @string.Join(", ", trade.RequestedItems.Select(i => $"{i.ItemTypeId}: {i.TradeQuantity} × {i.ItemName}"))</p>@if (!string.IsNullOrWhiteSpace(trade.DisputeReason)) { <div class="alert alert-warning"><strong>Dispute:</strong> @trade.DisputeReason</div> }<small class="text-muted">Created @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small><div class="mt-2"><a asp-page="/TradeRequests/Details" asp-route-id="@trade.TradeId" class="btn btn-sm btn-outline-primary">View details</a></div></div><form method="post" asp-page-handler="Resolve" asp-route-id="@trade.TradeId" class="trade-resolution"><label class="form-label">Resolution note</label><textarea asp-for="ResolutionNote" class="form-control mb-2" rows="2" required placeholder="Explain the Staff decision"></textarea>@if (trade.Status == "Disputed") { <button name="resolution" value="Completed" class="btn btn-sm btn-success me-1">Complete trade</button> }<button name="resolution" value="Cancelled" class="btn btn-sm btn-danger">Cancel & unlock</button></form></article>
+    }
+}
+<h2 class="h4 mt-5">Processing history (@Model.TradeHistory.Count)</h2>
+@if (Model.TradeHistory.Count == 0) { <div class="alert alert-info">No completed trade processing history.</div> }
+else
+{
+    <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Trade</th><th>Users</th><th>Result</th><th>Processed</th><th>Staff decision</th><th></th></tr></thead><tbody>
+    @foreach (var trade in Model.TradeHistory)
+    {
+        <tr><td>#@trade.TradeId</td><td>@trade.RequesterUserName ↔ @trade.RecipientUserName</td><td><span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span></td><td>@(trade.UpdatedAtUtc?.ToString("dd MMM yyyy, HH:mm 'UTC'") ?? "—")</td><td>@if (!string.IsNullOrWhiteSpace(trade.ResolvedByStaffUserName)) { <span><strong>@trade.ResolvedByStaffUserName</strong>: @trade.StaffResolutionNote</span> } else { <span class="text-muted">Handled by users</span> }</td><td><a asp-page="/TradeRequests/Details" asp-route-id="@trade.TradeId" class="btn btn-sm btn-outline-primary">Details</a></td></tr>
+    }
+    </tbody></table></div>
+}

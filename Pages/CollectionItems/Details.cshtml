@@ -13,8 +13,11 @@ Tutorial Group:
 <h1>Collection Item Details</h1>
 
 <dl class="row mt-4">
-    <dt class="col-sm-3">Item ID</dt>
+    <dt class="col-sm-3">Inventory Record ID</dt>
     <dd class="col-sm-9">@Model.Item.ItemId</dd>
+
+    <dt class="col-sm-3">Permanent Item Type ID</dt>
+    <dd class="col-sm-9"><strong>@Model.Item.ItemTypeId</strong></dd>
 
     <dt class="col-sm-3">Item Name</dt>
     <dd class="col-sm-9">@Model.Item.ItemName</dd>
@@ -27,6 +30,12 @@ Tutorial Group:
 
     <dt class="col-sm-3">Current Quantity</dt>
     <dd class="col-sm-9">@Model.Item.CurrentQuantity</dd>
+
+    <dt class="col-sm-3">Locked in Trades</dt>
+    <dd class="col-sm-9">@Model.Item.LockedQuantity</dd>
+
+    <dt class="col-sm-3">Available Quantity</dt>
+    <dd class="col-sm-9"><strong>@(Model.Item.CurrentQuantity - Model.Item.LockedQuantity)</strong></dd>
 
     <dt class="col-sm-3">Categories</dt>
     <dd class="col-sm-9">
@@ -56,7 +65,7 @@ Tutorial Group:
 </section>
 
 <a asp-page="Edit" asp-route-itemId="@Model.Item.ItemId" class="btn btn-primary">Edit</a>
-<a asp-page="Delete" asp-route-itemId="@Model.Item.ItemId" class="btn btn-outline-danger">Delete</a>
+@if (!Model.Item.IsInTrade) { <a asp-page="Delete" asp-route-itemId="@Model.Item.ItemId" class="btn btn-outline-danger">Delete</a> }
 <a asp-page="Index" class="btn btn-outline-secondary">Back to List</a>
 
 @if (Model.Item.QuantityHistory.Count > 0)

@@ -17,17 +17,23 @@ namespace ArcaneVault.Controllers;
 public class CollectionItemsController(ICollectionItemService collectionItemService)
     : ControllerBase
 {
+    [HttpGet("item-types")]
+    public async Task<ActionResult<IReadOnlyList<ItemTypeResponse>>> GetItemTypes([FromQuery] string? search, CancellationToken cancellationToken) =>
+        Ok(await collectionItemService.GetItemTypesAsync(search, cancellationToken));
+
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<CollectionItemResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<CollectionItemResponse>>> GetAll(
         [FromQuery] string? search,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int days = 7)
     {
         var items = await collectionItemService.GetAllAsync(
             CurrentUserName,
             User.IsInRole("Staff"),
             search,
+            days,
             cancellationToken);
         return Ok(items);
     }
@@ -46,6 +52,7 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
             userName,
             false,
             null,
+            7,
             cancellationToken));
     }
 
@@ -168,6 +175,10 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Invalid categories.",
                 detail: $"Unknown category codes: {string.Join(", ", result.InvalidCategoryCodes ?? [])}."),
+            CollectionItemStatus.InvalidItemType => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid item type.",
+                detail: "Select an existing item type, or mark this as a new item type with a unique ID."),
             _ => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Collection item conflict.",

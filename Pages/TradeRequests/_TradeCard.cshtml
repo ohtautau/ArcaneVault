@@ -3,7 +3,8 @@
 <article class="trade-card">
     <div class="trade-card-main">
         <span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span>
-        <h2 class="h5">@string.Join(", ", trade.OfferedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}")) <span class="text-muted fw-normal">for</span> @string.Join(", ", trade.RequestedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}"))</h2>
+        <h2 class="h5">@string.Join(", ", trade.OfferedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName} [{i.ItemTypeId}]")) <span class="text-muted fw-normal">for</span> @string.Join(", ", trade.RequestedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName} [{i.ItemTypeId}]"))</h2>
+        <p class="small text-muted mb-1">Source inventory IDs: @string.Join(", ", trade.OfferedItems.Concat(trade.RequestedItems).Select(i => i.CollectionItemId))@if (trade.Status == "Completed") { <span> · Received inventory IDs: @string.Join(", ", trade.OfferedItems.Concat(trade.RequestedItems).Select(i => i.ReceivedCollectionItemId?.ToString() ?? "legacy"))</span> }</p>
         <p class="mb-1">@(Model.IsIncoming ? $"Offered by {trade.RequesterUserName}" : $"Sent to {trade.RecipientUserName}")</p>
         @if (!string.IsNullOrWhiteSpace(trade.Message)) { <blockquote class="trade-message">@trade.Message</blockquote> }
         <small class="text-muted">Sent @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small>
@@ -11,11 +12,20 @@
     @if (trade.Status == "Pending") {
         <div class="trade-actions">
         @if (Model.IsIncoming) {
-            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Accepted"><button class="btn btn-sm btn-success">Accept & exchange</button></form>
+            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Accepted"><button class="btn btn-sm btn-success">Accept & lock items</button></form>
             <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Rejected"><button class="btn btn-sm btn-outline-danger">Reject</button></form>
         } else {
             <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Cancelled"><button class="btn btn-sm btn-outline-secondary">Cancel request</button></form>
         }
         </div>
     }
+    @if (trade.Status == "Trading") {
+        var confirmed = Model.IsIncoming ? trade.RecipientConfirmedComplete : trade.RequesterConfirmedComplete;
+        <div class="trade-actions">
+            @if (!confirmed) { <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Confirmed"><button class="btn btn-sm btn-success">Confirm trade completed</button></form> }
+            else { <span class="text-success small">You confirmed; waiting for the other user.</span> }
+            <form method="post" asp-page-handler="Dispute" asp-route-id="@trade.TradeId"><textarea name="disputeReason" class="form-control form-control-sm mb-1" required maxlength="500" placeholder="Describe the dispute"></textarea><button class="btn btn-sm btn-outline-danger">Raise dispute</button></form>
+        </div>
+    }
+    @if (trade.Status == "Disputed") { <div class="alert alert-warning mb-0"><strong>Dispute:</strong> @trade.DisputeReason<br/>Waiting for Staff resolution.</div> }
 </article>
