@@ -2,13 +2,14 @@
 @model ArcaneVault.Pages.TradeRequests.CreateModel
 @{ ViewData["Title"] = "Propose Trade"; }
 <h1>Propose a Trade</h1>
-<div class="trade-summary mb-4"><span class="wishlist-owner">Wanted by @Model.WishlistItem.UserName</span><h2>@Model.WishlistItem.ItemName</h2><p>@(Model.WishlistItem.Notes ?? "No additional preferences.")</p></div>
-@if (Model.CollectionItems.Count == 0) { <div class="alert alert-warning">Add a collection item before proposing a trade. <a asp-page="/CollectionItems/Create">Add an item</a>.</div> }
+<div class="trade-summary mb-4"><span class="wishlist-owner">Wishlist signal from @Model.WishlistItem.UserName</span><h2>@Model.WishlistItem.ItemName</h2><p>Select the real items you offer and the real items you want in return.</p></div>
+@if (Model.OfferedItems.Count == 0 || Model.RequestedItems.Count == 0) { <div class="alert alert-warning">Both users need collection items before a trade can be proposed.</div> }
 else {
 <form method="post" class="col-lg-7">
     <input asp-for="Input.WishlistItemId" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="mb-3"><label asp-for="Input.OfferedCollectionItemId" class="form-label"></label><select asp-for="Input.OfferedCollectionItemId" class="form-select"><option value="">Select one of your items</option>@foreach (var item in Model.CollectionItems) { <option value="@item.ItemId">@item.ItemName (@item.CurrentQuantity available)</option> }</select><span asp-validation-for="Input.OfferedCollectionItemId" class="text-danger"></span></div>
+    <fieldset class="mb-3"><legend class="h6">I offer (X)</legend>@foreach (var item in Model.OfferedItems) { <label class="form-check"><input class="form-check-input" type="checkbox" name="Input.OfferedCollectionItemIds" value="@item.ItemId" /> <span class="form-check-label">@item.ItemName</span></label> }</fieldset>
+    <fieldset class="mb-3"><legend class="h6">I request from @Model.WishlistItem.UserName (Y)</legend>@foreach (var item in Model.RequestedItems) { <label class="form-check"><input class="form-check-input" type="checkbox" name="Input.RequestedCollectionItemIds" value="@item.ItemId" /> <span class="form-check-label">@item.ItemName</span></label> }</fieldset>
     <div class="mb-3"><label asp-for="Input.Message" class="form-label"></label><textarea asp-for="Input.Message" class="form-control" rows="4" placeholder="Explain the proposed exchange or condition."></textarea><span asp-validation-for="Input.Message" class="text-danger"></span></div>
     <button class="btn btn-primary">Send trade request</button> <a asp-page="/Wishlist/Browse" class="btn btn-outline-secondary">Cancel</a>
 </form> }

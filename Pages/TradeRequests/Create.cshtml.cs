@@ -16,7 +16,8 @@ public class CreateModel(IExchangeApiClient exchangeClient, ICollectionItemApiCl
 {
     [BindProperty] public CreateTradeRequest Input { get; set; } = new();
     public WishlistItemResponse WishlistItem { get; private set; } = new();
-    public IReadOnlyList<CollectionItemResponse> CollectionItems { get; private set; } = [];
+    public IReadOnlyList<CollectionItemResponse> OfferedItems { get; private set; } = [];
+    public IReadOnlyList<CollectionItemResponse> RequestedItems { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int wishlistItemId, CancellationToken ct)
     {
@@ -26,7 +27,7 @@ public class CreateModel(IExchangeApiClient exchangeClient, ICollectionItemApiCl
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!ModelState.IsValid) return await LoadAsync(ct);
-        var result = await exchangeClient.CreateTradeRequestAsync(Input, ct);
+        var result = await exchangeClient.CreateTradeAsync(Input, ct);
         if (result.IsSuccess) return RedirectToPage("Index");
         if ((int)result.StatusCode is 401) return Challenge();
         if ((int)result.StatusCode is 403) return Forbid();
@@ -35,13 +36,20 @@ public class CreateModel(IExchangeApiClient exchangeClient, ICollectionItemApiCl
     }
     private async Task<IActionResult> LoadAsync(CancellationToken ct)
     {
-        var wish = await exchangeClient.GetWishlistItemAsync(Input.WishlistItemId, ct);
+        if (Input.WishlistItemId is not int wishlistItemId)
+        {
+            return BadRequest("A wishlist item is required to start this trade.");
+        }
+
+        var wish = await exchangeClient.GetWishlistItemAsync(wishlistItemId, ct);
         if (!wish.IsSuccess || wish.Value is null) return NotFound();
         if (string.Equals(wish.Value.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)) return BadRequest("You cannot trade against your own wishlist.");
         WishlistItem = wish.Value;
-        var items = await collectionClient.GetAllAsync(null, ct);
-        if (!items.IsSuccess || items.Value is null) return items.StatusCode == System.Net.HttpStatusCode.Unauthorized ? Challenge() : Page();
-        CollectionItems = items.Value.Where(item => string.Equals(item.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        var ownItems = await collectionClient.GetAllAsync(null, ct);
+        var theirItems = await collectionClient.GetForTradeAsync(WishlistItem.UserName, ct);
+        if (!ownItems.IsSuccess || ownItems.Value is null || !theirItems.IsSuccess || theirItems.Value is null) return Page();
+        OfferedItems = ownItems.Value.Where(item => string.Equals(item.UserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        RequestedItems = theirItems.Value;
         return Page();
     }
 }

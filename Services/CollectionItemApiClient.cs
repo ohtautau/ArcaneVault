@@ -27,6 +27,15 @@ public class CollectionItemApiClient(
             null,
             cancellationToken);
 
+    public Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetForTradeAsync(
+        string userName,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<IReadOnlyList<CollectionItemResponse>>(
+            HttpMethod.Get,
+            $"api/collection-items/user/{Uri.EscapeDataString(userName)}",
+            null,
+            cancellationToken);
+
     public Task<ApiResult<CollectionItemResponse>> GetByIdAsync(
         int itemId,
         CancellationToken cancellationToken = default) =>

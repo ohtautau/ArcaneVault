@@ -22,7 +22,9 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
 
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
 
-    public DbSet<TradeRequest> TradeRequests => Set<TradeRequest>();
+    public DbSet<Trade> Trades => Set<Trade>();
+
+    public DbSet<TradeItem> TradeItems => Set<TradeItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,7 +36,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
         ConfigureCollectionItems(modelBuilder);
         ConfigureCollectionItemCategories(modelBuilder);
         ConfigureWishlistItems(modelBuilder);
-        ConfigureTradeRequests(modelBuilder);
+        ConfigureTrades(modelBuilder);
+        ConfigureTradeItems(modelBuilder);
     }
 
     private static void ConfigureUserRoles(ModelBuilder modelBuilder)
@@ -163,21 +166,34 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             "CK_WishlistItems_DesiredQuantity_Positive", "DesiredQuantity > 0"));
     }
 
-    private static void ConfigureTradeRequests(ModelBuilder modelBuilder)
+    private static void ConfigureTrades(ModelBuilder modelBuilder)
     {
-        var entity = modelBuilder.Entity<TradeRequest>();
-        entity.ToTable("TradeRequests");
-        entity.HasKey(request => request.TradeRequestId);
-        entity.Property(request => request.RequesterUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
-        entity.Property(request => request.OwnerUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
-        entity.Property(request => request.Message).HasMaxLength(500);
-        entity.Property(request => request.Status).HasMaxLength(20).IsRequired();
-        entity.HasOne(request => request.WishlistItem).WithMany(item => item.TradeRequests)
-            .HasForeignKey(request => request.WishlistItemId).OnDelete(DeleteBehavior.Restrict);
-        entity.HasOne(request => request.OfferedCollectionItem).WithMany(item => item.OfferedTradeRequests)
-            .HasForeignKey(request => request.OfferedCollectionItemId).OnDelete(DeleteBehavior.Restrict);
-        entity.HasIndex(request => new { request.OwnerUserName, request.Status });
-        entity.HasIndex(request => new { request.RequesterUserName, request.Status });
-        entity.HasQueryFilter(request => !request.OfferedCollectionItem.IsDeleted);
+        var entity = modelBuilder.Entity<Trade>();
+        entity.ToTable("Trades");
+        entity.HasKey(trade => trade.TradeId);
+        entity.Property(trade => trade.RequesterUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
+        entity.Property(trade => trade.RecipientUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
+        entity.Property(trade => trade.Message).HasMaxLength(500);
+        entity.Property(trade => trade.Status).HasMaxLength(20).IsRequired();
+        entity.Property(trade => trade.StaffResolutionNote).HasMaxLength(500);
+        entity.Property(trade => trade.ResolvedByStaffUserName).HasMaxLength(50).UseCollation("NOCASE");
+        entity.HasOne(trade => trade.WishlistItem).WithMany(item => item.Trades)
+            .HasForeignKey(trade => trade.WishlistItemId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasIndex(trade => new { trade.RecipientUserName, trade.Status });
+        entity.HasIndex(trade => new { trade.RequesterUserName, trade.Status });
+    }
+
+    private static void ConfigureTradeItems(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<TradeItem>();
+        entity.ToTable("TradeItems");
+        entity.HasKey(item => item.TradeItemId);
+        entity.Property(item => item.Side).HasMaxLength(20).IsRequired();
+        entity.HasOne(item => item.Trade).WithMany(trade => trade.TradeItems)
+            .HasForeignKey(item => item.TradeId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(item => item.CollectionItem).WithMany(collection => collection.TradeItems)
+            .HasForeignKey(item => item.CollectionItemId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasIndex(item => new { item.TradeId, item.CollectionItemId }).IsUnique();
+        entity.HasQueryFilter(item => !item.CollectionItem.IsDeleted);
     }
 }

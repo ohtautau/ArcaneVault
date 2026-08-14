@@ -1,20 +1,17 @@
-// Name:
-// Student Admin No.:
-// Tutorial Group:
-
 using System.ComponentModel.DataAnnotations;
-
 namespace ArcaneVault.Models.Requests;
-
 public class CreateTradeRequest
 {
-    [Range(1, int.MaxValue)]
-    public int WishlistItemId { get; set; }
-
-    [Range(1, int.MaxValue)]
-    [Display(Name = "Item offered in exchange")]
-    public int OfferedCollectionItemId { get; set; }
-
-    [StringLength(500)]
-    public string? Message { get; set; }
+    [Required, MinLength(1)] public List<int> OfferedCollectionItemIds { get; set; } = [];
+    [Required, MinLength(1)] public List<int> RequestedCollectionItemIds { get; set; } = [];
+    public int? WishlistItemId { get; set; }
+    [StringLength(500)] public string? Message { get; set; }
+}
+public class UpdateTradeStatusRequest
+{
+    [Required, RegularExpression("^(Accepted|Rejected|Cancelled)$")] public string Status { get; set; } = string.Empty;
+}
+public class StaffCancelTradeRequest
+{
+    [Required, StringLength(500, MinimumLength = 5)] public string ResolutionNote { get; set; } = string.Empty;
 }

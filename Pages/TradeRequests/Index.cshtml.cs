@@ -13,8 +13,8 @@ namespace ArcaneVault.Pages.TradeRequests;
 [Authorize]
 public class IndexModel(IExchangeApiClient client) : PageModel
 {
-    public IReadOnlyList<TradeRequestResponse> Incoming { get; private set; } = [];
-    public IReadOnlyList<TradeRequestResponse> Outgoing { get; private set; } = [];
+    public IReadOnlyList<TradeResponse> Incoming { get; private set; } = [];
+    public IReadOnlyList<TradeResponse> Outgoing { get; private set; } = [];
     public async Task<IActionResult> OnGetAsync(CancellationToken ct) { await LoadAsync(ct); return Page(); }
     public async Task<IActionResult> OnPostStatusAsync(int id, string status, CancellationToken ct)
     {
@@ -26,9 +26,9 @@ public class IndexModel(IExchangeApiClient client) : PageModel
     }
     private async Task LoadAsync(CancellationToken ct)
     {
-        var result = await client.GetTradeRequestsAsync(ct);
+        var result = await client.GetTradesAsync(ct);
         if (!result.IsSuccess || result.Value is null) { ModelState.AddModelError(string.Empty, result.Problem?.Detail ?? "Trade requests could not be loaded."); return; }
-        Incoming = result.Value.Where(item => string.Equals(item.OwnerUserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        Incoming = result.Value.Where(item => string.Equals(item.RecipientUserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
         Outgoing = result.Value.Where(item => string.Equals(item.RequesterUserName, User.Identity!.Name, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 }

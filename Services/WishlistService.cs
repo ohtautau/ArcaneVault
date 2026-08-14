@@ -52,7 +52,7 @@ public class WishlistService(ArcaneVaultDbContext dbContext) : IWishlistService
         var item = await dbContext.WishlistItems.SingleOrDefaultAsync(item => item.WishlistItemId == id, cancellationToken);
         if (item is null) return new(WishlistStatus.NotFound);
         if (!string.Equals(item.UserName, userName, StringComparison.OrdinalIgnoreCase)) return new(WishlistStatus.Forbidden);
-        if (await dbContext.TradeRequests.AnyAsync(request => request.WishlistItemId == id && request.Status == "Pending", cancellationToken)) return new(WishlistStatus.HasPendingTrades);
+        if (await dbContext.Trades.AnyAsync(request => request.WishlistItemId == id && request.Status == "Pending", cancellationToken)) return new(WishlistStatus.HasPendingTrades);
         dbContext.WishlistItems.Remove(item);
         try { await dbContext.SaveChangesAsync(cancellationToken); }
         catch (DbUpdateException) { return new(WishlistStatus.Conflict); }
@@ -62,7 +62,7 @@ public class WishlistService(ArcaneVaultDbContext dbContext) : IWishlistService
     private static IQueryable<WishlistItemResponse> Project(IQueryable<WishlistItem> query) => query.Select(item => new WishlistItemResponse
     {
         WishlistItemId = item.WishlistItemId, ItemName = item.ItemName, Notes = item.Notes, DesiredQuantity = item.DesiredQuantity,
-        UserName = item.UserName, CreatedAtUtc = item.CreatedAtUtc, PendingTradeCount = item.TradeRequests.Count(request => request.Status == "Pending")
+        UserName = item.UserName, CreatedAtUtc = item.CreatedAtUtc, PendingTradeCount = item.Trades.Count(request => request.Status == "Pending")
     });
     private static string? NormalizeNotes(string? notes) => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
 }

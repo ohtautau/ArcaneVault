@@ -3,18 +3,18 @@
 <article class="trade-card">
     <div class="trade-card-main">
         <span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span>
-        <h2 class="h5">@trade.OfferedItemName <span class="text-muted fw-normal">for</span> @trade.WantedItemName</h2>
-        <p class="mb-1">@(Model.IsIncoming ? $"Offered by {trade.RequesterUserName}" : $"Sent to {trade.OwnerUserName}")</p>
+        <h2 class="h5">@string.Join(", ", trade.OfferedItems.Select(i => i.ItemName)) <span class="text-muted fw-normal">for</span> @string.Join(", ", trade.RequestedItems.Select(i => i.ItemName))</h2>
+        <p class="mb-1">@(Model.IsIncoming ? $"Offered by {trade.RequesterUserName}" : $"Sent to {trade.RecipientUserName}")</p>
         @if (!string.IsNullOrWhiteSpace(trade.Message)) { <blockquote class="trade-message">@trade.Message</blockquote> }
         <small class="text-muted">Sent @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small>
     </div>
     @if (trade.Status == "Pending") {
         <div class="trade-actions">
         @if (Model.IsIncoming) {
-            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeRequestId" asp-route-status="Accepted"><button class="btn btn-sm btn-success">Accept</button></form>
-            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeRequestId" asp-route-status="Declined"><button class="btn btn-sm btn-outline-danger">Decline</button></form>
+            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Accepted"><button class="btn btn-sm btn-success">Accept & exchange</button></form>
+            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Rejected"><button class="btn btn-sm btn-outline-danger">Reject</button></form>
         } else {
-            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeRequestId" asp-route-status="Cancelled"><button class="btn btn-sm btn-outline-secondary">Cancel request</button></form>
+            <form method="post" asp-page-handler="Status" asp-route-id="@trade.TradeId" asp-route-status="Cancelled"><button class="btn btn-sm btn-outline-secondary">Cancel request</button></form>
         }
         </div>
     }

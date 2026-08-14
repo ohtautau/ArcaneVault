@@ -32,6 +32,23 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
         return Ok(items);
     }
 
+    [HttpGet("user/{userName}")]
+    public async Task<ActionResult<IReadOnlyList<CollectionItemResponse>>> GetForTrade(
+        string userName,
+        CancellationToken cancellationToken)
+    {
+        if (string.Equals(userName, CurrentUserName, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest();
+        }
+
+        return Ok(await collectionItemService.GetAllAsync(
+            userName,
+            false,
+            null,
+            cancellationToken));
+    }
+
     [HttpGet("{itemId:int}")]
     [ProducesResponseType<CollectionItemResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

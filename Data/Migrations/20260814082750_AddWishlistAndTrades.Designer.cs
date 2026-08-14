@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ArcaneVault.Data.Migrations
 {
     [DbContext(typeof(ArcaneVaultDbContext))]
-    [Migration("20260814074638_AddWishlistTrading")]
-    partial class AddWishlistTrading
+    [Migration("20260814082750_AddWishlistAndTrades")]
+    partial class AddWishlistAndTrades
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -164,9 +164,9 @@ namespace ArcaneVault.Data.Migrations
                     b.ToTable("CollectionItemCategories", (string)null);
                 });
 
-            modelBuilder.Entity("ArcaneVault.Models.Entities.TradeRequest", b =>
+            modelBuilder.Entity("ArcaneVault.Models.Entities.Trade", b =>
                 {
-                    b.Property<int>("TradeRequestId")
+                    b.Property<int>("TradeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
@@ -177,10 +177,7 @@ namespace ArcaneVault.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("OfferedCollectionItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("OwnerUserName")
+                    b.Property<string>("RecipientUserName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
@@ -192,7 +189,13 @@ namespace ArcaneVault.Data.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
-                    b.Property<DateTime?>("RespondedAtUtc")
+                    b.Property<string>("ResolvedByStaffUserName")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("StaffResolutionNote")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -200,20 +203,48 @@ namespace ArcaneVault.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("WishlistItemId")
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("WishlistItemId")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("TradeRequestId");
-
-                    b.HasIndex("OfferedCollectionItemId");
+                    b.HasKey("TradeId");
 
                     b.HasIndex("WishlistItemId");
 
-                    b.HasIndex("OwnerUserName", "Status");
+                    b.HasIndex("RecipientUserName", "Status");
 
                     b.HasIndex("RequesterUserName", "Status");
 
-                    b.ToTable("TradeRequests", (string)null);
+                    b.ToTable("Trades", (string)null);
+                });
+
+            modelBuilder.Entity("ArcaneVault.Models.Entities.TradeItem", b =>
+                {
+                    b.Property<int>("TradeItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CollectionItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Side")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TradeId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("TradeItemId");
+
+                    b.HasIndex("CollectionItemId");
+
+                    b.HasIndex("TradeId", "CollectionItemId")
+                        .IsUnique();
+
+                    b.ToTable("TradeItems", (string)null);
                 });
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.WishlistItem", b =>
@@ -294,23 +325,33 @@ namespace ArcaneVault.Data.Migrations
                     b.Navigation("CollectionItem");
                 });
 
-            modelBuilder.Entity("ArcaneVault.Models.Entities.TradeRequest", b =>
+            modelBuilder.Entity("ArcaneVault.Models.Entities.Trade", b =>
                 {
-                    b.HasOne("ArcaneVault.Models.Entities.CollectionItem", "OfferedCollectionItem")
-                        .WithMany("OfferedTradeRequests")
-                        .HasForeignKey("OfferedCollectionItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ArcaneVault.Models.Entities.WishlistItem", "WishlistItem")
-                        .WithMany("TradeRequests")
+                        .WithMany("Trades")
                         .HasForeignKey("WishlistItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("OfferedCollectionItem");
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("WishlistItem");
+                });
+
+            modelBuilder.Entity("ArcaneVault.Models.Entities.TradeItem", b =>
+                {
+                    b.HasOne("ArcaneVault.Models.Entities.CollectionItem", "CollectionItem")
+                        .WithMany("TradeItems")
+                        .HasForeignKey("CollectionItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ArcaneVault.Models.Entities.Trade", "Trade")
+                        .WithMany("TradeItems")
+                        .HasForeignKey("TradeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CollectionItem");
+
+                    b.Navigation("Trade");
                 });
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.WishlistItem", b =>
@@ -345,12 +386,17 @@ namespace ArcaneVault.Data.Migrations
                 {
                     b.Navigation("CollectionItemCategories");
 
-                    b.Navigation("OfferedTradeRequests");
+                    b.Navigation("TradeItems");
+                });
+
+            modelBuilder.Entity("ArcaneVault.Models.Entities.Trade", b =>
+                {
+                    b.Navigation("TradeItems");
                 });
 
             modelBuilder.Entity("ArcaneVault.Models.Entities.WishlistItem", b =>
                 {
-                    b.Navigation("TradeRequests");
+                    b.Navigation("Trades");
                 });
 #pragma warning restore 612, 618
         }

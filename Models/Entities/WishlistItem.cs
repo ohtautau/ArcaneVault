@@ -13,5 +13,5 @@ public class WishlistItem
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public string UserName { get; set; } = string.Empty;
     public ArcaneVaultUser User { get; set; } = null!;
-    public ICollection<TradeRequest> TradeRequests { get; set; } = [];
+    public ICollection<Trade> Trades { get; set; } = [];
 }

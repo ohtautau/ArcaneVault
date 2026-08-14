@@ -22,5 +22,5 @@ public class CollectionItem
 
     public ICollection<CollectionItemCategory> CollectionItemCategories { get; set; } = [];
 
-    public ICollection<TradeRequest> OfferedTradeRequests { get; set; } = [];
+    public ICollection<TradeItem> TradeItems { get; set; } = [];
 }

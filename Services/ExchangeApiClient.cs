@@ -18,9 +18,11 @@ public class ExchangeApiClient(IHttpClientFactory httpClientFactory, IHttpContex
     public Task<ApiResult<WishlistItemResponse>> CreateWishlistItemAsync(CreateWishlistItemRequest request, CancellationToken ct = default) => SendAsync<WishlistItemResponse>(HttpMethod.Post, "api/wishlist", JsonContent.Create(request), ct);
     public Task<ApiResult<WishlistItemResponse>> UpdateWishlistItemAsync(int id, UpdateWishlistItemRequest request, CancellationToken ct = default) => SendAsync<WishlistItemResponse>(HttpMethod.Put, $"api/wishlist/{id}", JsonContent.Create(request), ct);
     public async Task<ApiResult> DeleteWishlistItemAsync(int id, CancellationToken ct = default) { var result = await SendAsync<object>(HttpMethod.Delete, $"api/wishlist/{id}", null, ct); return new(result.StatusCode, result.Problem); }
-    public Task<ApiResult<IReadOnlyList<TradeRequestResponse>>> GetTradeRequestsAsync(CancellationToken ct = default) => SendAsync<IReadOnlyList<TradeRequestResponse>>(HttpMethod.Get, "api/trade-requests", null, ct);
-    public Task<ApiResult<TradeRequestResponse>> CreateTradeRequestAsync(CreateTradeRequest request, CancellationToken ct = default) => SendAsync<TradeRequestResponse>(HttpMethod.Post, "api/trade-requests", JsonContent.Create(request), ct);
-    public Task<ApiResult<TradeRequestResponse>> UpdateTradeStatusAsync(int id, string status, CancellationToken ct = default) => SendAsync<TradeRequestResponse>(HttpMethod.Patch, $"api/trade-requests/{id}/status", JsonContent.Create(new UpdateTradeStatusRequest { Status = status }), ct);
+    public Task<ApiResult<IReadOnlyList<TradeResponse>>> GetTradesAsync(CancellationToken ct = default) => SendAsync<IReadOnlyList<TradeResponse>>(HttpMethod.Get, "api/trades", null, ct);
+    public Task<ApiResult<IReadOnlyList<TradeResponse>>> GetActiveTradesAsync(CancellationToken ct = default) => SendAsync<IReadOnlyList<TradeResponse>>(HttpMethod.Get, "api/trades/active", null, ct);
+    public Task<ApiResult<TradeResponse>> CreateTradeAsync(CreateTradeRequest request, CancellationToken ct = default) => SendAsync<TradeResponse>(HttpMethod.Post, "api/trades", JsonContent.Create(request), ct);
+    public Task<ApiResult<TradeResponse>> UpdateTradeStatusAsync(int id, string status, CancellationToken ct = default) => SendAsync<TradeResponse>(HttpMethod.Patch, $"api/trades/{id}/status", JsonContent.Create(new UpdateTradeStatusRequest { Status = status }), ct);
+    public Task<ApiResult<TradeResponse>> StaffCancelTradeAsync(int id, string note, CancellationToken ct = default) => SendAsync<TradeResponse>(HttpMethod.Post, $"api/trades/{id}/staff-cancel", JsonContent.Create(new StaffCancelTradeRequest { ResolutionNote = note }), ct);
 
     private async Task<ApiResult<T>> SendAsync<T>(HttpMethod method, string uri, HttpContent? content, CancellationToken ct)
     {

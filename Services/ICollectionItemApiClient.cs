@@ -14,6 +14,10 @@ public interface ICollectionItemApiClient
         string? search = null,
         CancellationToken cancellationToken = default);
 
+    Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetForTradeAsync(
+        string userName,
+        CancellationToken cancellationToken = default);
+
     Task<ApiResult<CollectionItemResponse>> GetByIdAsync(
         int itemId,
         CancellationToken cancellationToken = default);

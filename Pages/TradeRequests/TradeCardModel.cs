@@ -6,4 +6,4 @@ using ArcaneVault.Models.Responses;
 
 namespace ArcaneVault.Pages.TradeRequests;
 
-public record TradeCardModel(TradeRequestResponse Trade, bool IsIncoming);
+public record TradeCardModel(TradeResponse Trade, bool IsIncoming);
