@@ -13,6 +13,7 @@ public enum CollectionItemStatus
     Forbidden,
     InvalidCategories,
     InvalidItemType,
+    InvalidImage,
     Conflict
 }
 

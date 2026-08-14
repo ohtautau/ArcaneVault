@@ -19,6 +19,12 @@ public class CreateCollectionItemRequest
     [Display(Name = "Item Name")]
     public string ItemName { get; set; } = string.Empty;
 
+    [Required, RegularExpression("^(Mint|Good|Fair|Poor)$")]
+    public string Condition { get; set; } = "Good";
+
+    [Required, RegularExpression("^(Common|Rare|Ultra Rare)$")]
+    public string Rarity { get; set; } = "Common";
+
     [Range(0, int.MaxValue,
         ErrorMessage = "Starting quantity cannot be negative.")]
     [Display(Name = "Starting Quantity")]

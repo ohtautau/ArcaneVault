@@ -134,16 +134,21 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
             source.QuantityHistory.Add(new CollectionItemQuantityHistory { Quantity = source.CurrentQuantity, ChangedAtUtc = now });
             var destinationUser = tradeItem.Side == "Offered" ? t.RecipientUserName : t.RequesterUserName;
             var destination = db.CollectionItems.Local.FirstOrDefault(item =>
-                !item.IsDeleted && item.UserName == destinationUser && item.ItemTypeId == source.ItemTypeId);
+                !item.IsDeleted && item.UserName == destinationUser && item.ItemTypeId == source.ItemTypeId
+                && item.Condition == source.Condition && item.Rarity == source.Rarity);
             destination ??= await db.CollectionItems
                 .Include(item => item.CollectionItemCategories)
-                .FirstOrDefaultAsync(item => item.UserName == destinationUser && item.ItemTypeId == source.ItemTypeId, ct);
+                .FirstOrDefaultAsync(item => item.UserName == destinationUser && item.ItemTypeId == source.ItemTypeId
+                    && item.Condition == source.Condition && item.Rarity == source.Rarity, ct);
             if (destination is null)
             {
                 destination = new CollectionItem
                 {
                     ItemTypeId = source.ItemTypeId,
                     ItemName = source.ItemName,
+                    Condition = source.Condition,
+                    Rarity = source.Rarity,
+                    ImagePath = source.ImagePath,
                     StartingQuantity = tradeItem.Quantity,
                     CurrentQuantity = tradeItem.Quantity,
                     UserName = destinationUser,
@@ -160,6 +165,6 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
         }
     }
     private static TradeResponse Map(Trade t) => new() { TradeId=t.TradeId,RequesterUserName=t.RequesterUserName,RecipientUserName=t.RecipientUserName,WishlistItemId=t.WishlistItemId,Message=t.Message,Status=t.Status,CreatedAtUtc=t.CreatedAtUtc,UpdatedAtUtc=t.UpdatedAtUtc,StaffResolutionNote=t.StaffResolutionNote,ResolvedByStaffUserName=t.ResolvedByStaffUserName,RequesterConfirmedComplete=t.RequesterConfirmedComplete,RecipientConfirmedComplete=t.RecipientConfirmedComplete,DisputeReason=t.DisputeReason,OfferedItems=t.TradeItems.Where(i=>i.Side=="Offered").Select(i=>MapItem(i,t.RequesterUserName)).ToList(),RequestedItems=t.TradeItems.Where(i=>i.Side=="Requested").Select(i=>MapItem(i,t.RecipientUserName)).ToList() };
-    private static TradeItemResponse MapItem(TradeItem i,string owner)=>new(){CollectionItemId=i.CollectionItemId,ItemTypeId=i.CollectionItem.ItemTypeId,ReceivedCollectionItemId=i.TransferredCollectionItemId,ItemName=i.CollectionItem.ItemName,OriginalOwnerUserName=owner,CurrentQuantity=i.CollectionItem.CurrentQuantity,TradeQuantity=i.Quantity,LockedQuantity=i.CollectionItem.LockedQuantity,IsInTrade=i.CollectionItem.IsInTrade};
+    private static TradeItemResponse MapItem(TradeItem i,string owner)=>new(){CollectionItemId=i.CollectionItemId,ItemTypeId=i.CollectionItem.ItemTypeId,ReceivedCollectionItemId=i.TransferredCollectionItemId,ItemName=i.CollectionItem.ItemName,Condition=i.CollectionItem.Condition,Rarity=i.CollectionItem.Rarity,ImagePath=i.CollectionItem.ImagePath,OriginalOwnerUserName=owner,CurrentQuantity=i.CollectionItem.CurrentQuantity,TradeQuantity=i.Quantity,LockedQuantity=i.CollectionItem.LockedQuantity,IsInTrade=i.CollectionItem.IsInTrade};
     private static string? Clean(string? s)=>string.IsNullOrWhiteSpace(s)?null:s.Trim();
 }

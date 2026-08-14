@@ -29,3 +29,7 @@ coverage/
 *.db-wal
 .DS_Store
 Thumbs.db
+
+# User-uploaded collection photos
+/wwwroot/uploads/collection-items/*
+!/wwwroot/uploads/collection-items/.gitkeep

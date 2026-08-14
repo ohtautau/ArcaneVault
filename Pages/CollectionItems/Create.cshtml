@@ -1,75 +1,20 @@
 @page
-<!--
-Name:
-Student Admin No.:
-Tutorial Group:
--->
-
 @model ArcaneVault.Pages.CollectionItems.CreateModel
-@{
-    ViewData["Title"] = "Add Collection Item";
-}
-
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <h1>Add Collection Item</h1>
-        <p class="text-muted">Record a new item in your collection.</p>
-
-        <form method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="mb-3">
-                <label asp-for="Input.ItemName" class="form-label"></label>
-                <input asp-for="Input.ItemName" class="form-control" />
-                <span asp-validation-for="Input.ItemName" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Input.StartingQuantity" class="form-label"></label>
-                <input asp-for="Input.StartingQuantity" class="form-control" />
-                <span asp-validation-for="Input.StartingQuantity" class="text-danger"></span>
-            </div>
-
-            <fieldset class="mb-3">
-                <legend class="h6">Categories</legend>
-                <span asp-validation-for="Input.CategoryCodes" class="text-danger d-block"></span>
-                @foreach (var category in Model.Categories)
-                {
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               name="Input.CategoryCodes" value="@category.CategoryCode"
-                               id="category_@category.CategoryCode" />
-                        <label class="form-check-label" for="category_@category.CategoryCode">
-                            @category.CategoryName (@category.CategoryCode)
-                        </label>
-                    </div>
-                }
-            </fieldset>
-
-            <button type="submit" class="btn btn-primary">Create</button>
-            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
-        </form>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        const itemTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ItemTypes));
-        const typeId = document.getElementById('Input_ItemTypeId'); const itemName = document.getElementById('Input_ItemName');
-        const syncType = () => { if (document.getElementById('existing-type').checked) { const match = itemTypes.find(x => x.ItemTypeId.toLowerCase() === typeId.value.trim().toLowerCase()); if (match) itemName.value = match.ItemName; } itemName.readOnly = document.getElementById('existing-type').checked; };
-        typeId.addEventListener('input', syncType); document.querySelectorAll('[name="Input.IsNewItemType"]').forEach(x => x.addEventListener('change', syncType)); syncType();
-    </script>
-}
-            <fieldset class="mb-3">
-                <legend class="h6">Item type</legend>
-                <div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="false" id="existing-type" checked="@(!Model.Input.IsNewItemType)" /><label class="form-check-label" for="existing-type">Use an existing item type</label></div>
-                <div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="true" id="new-type" checked="@Model.Input.IsNewItemType" /><label class="form-check-label" for="new-type">This is a new item type</label></div>
-            </fieldset>
-
-            <div class="mb-3">
-                <label asp-for="Input.ItemTypeId" class="form-label"></label>
-                <input asp-for="Input.ItemTypeId" class="form-control" list="item-type-options" placeholder="Search by permanent item ID or name" />
-                <datalist id="item-type-options">@foreach (var type in Model.ItemTypes) { <option value="@type.ItemTypeId">@type.ItemName</option> }</datalist>
-                <div class="form-text">For an existing type, select its ID. For a new type, enter a unique ID or leave blank to generate one.</div>
-            </div>
+@{ ViewData["Title"] = "Add Collection Item"; }
+<div class="row justify-content-center"><div class="col-md-8 col-lg-6">
+<h1>Add Collection Item</h1><p class="text-muted">Record a new item in your collection.</p>
+<form method="post" enctype="multipart/form-data">
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<fieldset class="mb-3"><legend class="h6">Item type</legend><div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="false" id="existing-type" /><label class="form-check-label" for="existing-type">Use an existing item type</label></div><div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="true" id="new-type" /><label class="form-check-label" for="new-type">This is a new item type</label></div></fieldset>
+<div class="mb-3"><label asp-for="Input.ItemTypeId" class="form-label"></label><input asp-for="Input.ItemTypeId" class="form-control" list="item-type-options" placeholder="Search by permanent item ID or name" /><datalist id="item-type-options">@foreach (var type in Model.ItemTypes) { <option value="@type.ItemTypeId">@type.ItemName</option> }</datalist><div class="form-text">Select an existing ID, or enter a unique ID/leave blank for a new type.</div></div>
+<div class="mb-3"><label asp-for="Input.ItemName" class="form-label"></label><input asp-for="Input.ItemName" class="form-control" /><span asp-validation-for="Input.ItemName" class="text-danger"></span></div>
+<div class="row"><div class="col-md-6 mb-3"><label asp-for="Input.Condition" class="form-label"></label><select asp-for="Input.Condition" class="form-select"><option value="Mint">Mint — 全新 / 完美</option><option value="Good">Good — 良好</option><option value="Fair">Fair — 一般</option><option value="Poor">Poor — 较差</option></select><span asp-validation-for="Input.Condition" class="text-danger"></span></div><div class="col-md-6 mb-3"><label asp-for="Input.Rarity" class="form-label"></label><select asp-for="Input.Rarity" class="form-select"><option value="Common">Common — 普通</option><option value="Rare">Rare — 稀有</option><option value="Ultra Rare">Ultra Rare — 超稀有</option></select><span asp-validation-for="Input.Rarity" class="text-danger"></span></div></div>
+<div class="mb-3"><label asp-for="Input.StartingQuantity" class="form-label"></label><input asp-for="Input.StartingQuantity" class="form-control" /><span asp-validation-for="Input.StartingQuantity" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="Photo" class="form-label">Collection Item Photo</label><input asp-for="Photo" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="Photo" class="text-danger"></span><div class="form-text">Optional JPG, PNG, or WebP image, up to 5 MB.</div></div>
+<fieldset class="mb-3"><legend class="h6">Categories</legend><span asp-validation-for="Input.CategoryCodes" class="text-danger d-block"></span>@foreach (var category in Model.Categories) { <div class="form-check"><input class="form-check-input" type="checkbox" name="Input.CategoryCodes" value="@category.CategoryCode" id="category_@category.CategoryCode" /><label class="form-check-label" for="category_@category.CategoryCode">@category.CategoryName (@category.CategoryCode)</label></div> }</fieldset>
+<button type="submit" class="btn btn-primary">Create</button> <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+</form></div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script>
+const itemTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ItemTypes)); const typeId = document.getElementById('Input_ItemTypeId'), itemName = document.getElementById('Input_ItemName');
+const syncType = () => { const existing = document.getElementById('existing-type').checked; if (existing) { const match = itemTypes.find(x => x.ItemTypeId.toLowerCase() === typeId.value.trim().toLowerCase()); if (match) itemName.value = match.ItemName; } itemName.readOnly = existing; }; typeId.addEventListener('input', syncType); document.querySelectorAll('[name="Input.IsNewItemType"]').forEach(x => x.addEventListener('change', syncType)); syncType();
+</script> }

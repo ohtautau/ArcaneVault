@@ -14,6 +14,12 @@ public class CollectionItem
 
     public string ItemName { get; set; } = string.Empty;
 
+    public string Condition { get; set; } = "Good";
+
+    public string Rarity { get; set; } = "Common";
+
+    public string? ImagePath { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

@@ -37,6 +37,11 @@ public interface ICollectionItemApiClient
         UpdateCollectionItemRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<ApiResult<CollectionItemResponse>> UploadImageAsync(
+        int itemId,
+        IFormFile image,
+        CancellationToken cancellationToken = default);
+
     Task<ApiResult> DeleteAsync(
         int itemId,
         CancellationToken cancellationToken = default);

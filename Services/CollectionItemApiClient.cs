@@ -74,6 +74,17 @@ public class CollectionItemApiClient(
             JsonContent.Create(request),
             cancellationToken);
 
+    public async Task<ApiResult<CollectionItemResponse>> UploadImageAsync(
+        int itemId, IFormFile image, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var source = image.OpenReadStream();
+        using var fileContent = new StreamContent(source);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(image.ContentType ?? "application/octet-stream");
+        content.Add(fileContent, "image", image.FileName);
+        return await SendAsync<CollectionItemResponse>(HttpMethod.Post, $"api/collection-items/{itemId}/image", content, cancellationToken);
+    }
+
     public async Task<ApiResult> DeleteAsync(
         int itemId,
         CancellationToken cancellationToken = default)

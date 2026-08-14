@@ -85,6 +85,8 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Runtime uploads are not part of the build-time static asset manifest.
+app.UseStaticFiles();
 
 app.UseRouting();
 
