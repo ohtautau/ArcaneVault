@@ -73,6 +73,19 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                     .Where(existing => existing.ItemId == itemId))
             .SingleAsync(cancellationToken);
 
+        response.QuantityHistory = await dbContext.CollectionItemQuantityHistory
+            .AsNoTracking()
+            .Where(history => history.ItemId == itemId)
+            .OrderByDescending(history => history.ChangedAtUtc)
+            .Take(30)
+            .OrderBy(history => history.ChangedAtUtc)
+            .Select(history => new QuantityHistoryPointResponse
+            {
+                Quantity = history.Quantity,
+                ChangedAtUtc = history.ChangedAtUtc
+            })
+            .ToListAsync(cancellationToken);
+
         return new CollectionItemResult(CollectionItemStatus.Success, response);
     }
 
@@ -259,16 +272,6 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                 {
                     CategoryCode = link.CategoryCode,
                     CategoryName = link.Category.CategoryName
-                })
-                .ToList(),
-            QuantityHistory = item.QuantityHistory
-                .OrderByDescending(history => history.ChangedAtUtc)
-                .Take(30)
-                .OrderBy(history => history.ChangedAtUtc)
-                .Select(history => new QuantityHistoryPointResponse
-                {
-                    Quantity = history.Quantity,
-                    ChangedAtUtc = history.ChangedAtUtc
                 })
                 .ToList()
         });
