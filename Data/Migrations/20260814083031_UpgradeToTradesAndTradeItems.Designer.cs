@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ArcaneVault.Data.Migrations
 {
     [DbContext(typeof(ArcaneVaultDbContext))]
-    [Migration("20260814082750_AddWishlistAndTrades")]
-    partial class AddWishlistAndTrades
+    [Migration("20260814083031_UpgradeToTradesAndTradeItems")]
+    partial class UpgradeToTradesAndTradeItems
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
