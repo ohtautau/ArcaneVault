@@ -10,8 +10,18 @@ namespace ArcaneVault.Services;
 
 public interface ICollectionItemApiClient
 {
+    Task<ApiResult<IReadOnlyList<ItemTypeResponse>>> GetItemTypesAsync(string? search = null, CancellationToken cancellationToken = default);
     Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetAllAsync(
         string? search = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetAllAsync(
+        string? search,
+        int changePeriodDays,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetForTradeAsync(
+        string userName,
         CancellationToken cancellationToken = default);
 
     Task<ApiResult<CollectionItemResponse>> GetByIdAsync(

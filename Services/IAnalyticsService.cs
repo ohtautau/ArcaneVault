@@ -11,4 +11,6 @@ public interface IAnalyticsService
     Task<AnalyticsDashboardResponse> GetDashboardAsync(
         int days,
         CancellationToken cancellationToken = default);
+
+    Task<byte[]> ExportCollectionsCsvAsync(CancellationToken cancellationToken = default);
 }

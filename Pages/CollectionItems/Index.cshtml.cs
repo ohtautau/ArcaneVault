@@ -16,11 +16,15 @@ public class IndexModel(ICollectionItemApiClient collectionItemApiClient)
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int Days { get; set; } = 7;
+
     public IReadOnlyList<CollectionItemResponse> Items { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        var result = await collectionItemApiClient.GetAllAsync(Search, cancellationToken);
+        if (Days is not (1 or 3 or 7 or 30)) Days = 7;
+        var result = await collectionItemApiClient.GetAllAsync(Search, Days, cancellationToken);
         if (result.IsSuccess && result.Value is not null)
         {
             Items = result.Value;

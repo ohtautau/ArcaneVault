@@ -21,6 +21,7 @@ public class EditModel(
     public int ItemId { get; private set; }
 
     public int StartingQuantity { get; private set; }
+    public string ItemTypeId { get; private set; } = string.Empty;
 
     public IReadOnlyList<CategoryResponse> Categories { get; private set; } = [];
 
@@ -40,6 +41,7 @@ public class EditModel(
 
         ItemId = itemResult.Value.ItemId;
         StartingQuantity = itemResult.Value.StartingQuantity;
+        ItemTypeId = itemResult.Value.ItemTypeId;
         Input.ItemName = itemResult.Value.ItemName;
         Input.CurrentQuantity = itemResult.Value.CurrentQuantity;
         Input.CategoryCodes = itemResult.Value.Categories
@@ -90,6 +92,7 @@ public class EditModel(
         if (itemResult.IsSuccess && itemResult.Value is not null)
         {
             StartingQuantity = itemResult.Value.StartingQuantity;
+            ItemTypeId = itemResult.Value.ItemTypeId;
         }
 
         await LoadCategoriesAsync(cancellationToken);

@@ -13,8 +13,11 @@ Tutorial Group:
 <h1>Collection Item Details</h1>
 
 <dl class="row mt-4">
-    <dt class="col-sm-3">Item ID</dt>
+    <dt class="col-sm-3">Inventory Record ID</dt>
     <dd class="col-sm-9">@Model.Item.ItemId</dd>
+
+    <dt class="col-sm-3">Permanent Item Type ID</dt>
+    <dd class="col-sm-9"><strong>@Model.Item.ItemTypeId</strong></dd>
 
     <dt class="col-sm-3">Item Name</dt>
     <dd class="col-sm-9">@Model.Item.ItemName</dd>
@@ -28,12 +31,63 @@ Tutorial Group:
     <dt class="col-sm-3">Current Quantity</dt>
     <dd class="col-sm-9">@Model.Item.CurrentQuantity</dd>
 
+    <dt class="col-sm-3">Locked in Trades</dt>
+    <dd class="col-sm-9">@Model.Item.LockedQuantity</dd>
+
+    <dt class="col-sm-3">Available Quantity</dt>
+    <dd class="col-sm-9"><strong>@(Model.Item.CurrentQuantity - Model.Item.LockedQuantity)</strong></dd>
+
     <dt class="col-sm-3">Categories</dt>
     <dd class="col-sm-9">
         @string.Join(", ", Model.Item.Categories.Select(category => category.CategoryName))
     </dd>
 </dl>
 
+<section class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Recent quantity changes</h2>
+        <p class="text-muted small">Up to the latest 30 recorded quantity updates.</p>
+        @if (Model.Item.QuantityHistory.Count == 0)
+        {
+            <div class="alert alert-info mb-0">No quantity changes have been recorded yet.</div>
+        }
+        else
+        {
+            <canvas id="quantity-history-chart" height="100" role="img" aria-label="Recent quantity history chart"></canvas>
+            <div class="quantity-history-list mt-3">
+                @foreach (var point in Model.Item.QuantityHistory.Reverse())
+                {
+                    <span class="badge text-bg-light">@point.ChangedAtUtc.ToString("dd MMM HH:mm") UTC: @point.Quantity</span>
+                }
+            </div>
+        }
+    </div>
+</section>
+
 <a asp-page="Edit" asp-route-itemId="@Model.Item.ItemId" class="btn btn-primary">Edit</a>
-<a asp-page="Delete" asp-route-itemId="@Model.Item.ItemId" class="btn btn-outline-danger">Delete</a>
+@if (!Model.Item.IsInTrade) { <a asp-page="Delete" asp-route-itemId="@Model.Item.ItemId" class="btn btn-outline-danger">Delete</a> }
 <a asp-page="Index" class="btn btn-outline-secondary">Back to List</a>
+
+@if (Model.Item.QuantityHistory.Count > 0)
+{
+    <script>
+        (() => {
+            const points = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Item.QuantityHistory));
+            const canvas = document.getElementById('quantity-history-chart');
+            const ctx = canvas.getContext('2d');
+            const scale = window.devicePixelRatio || 1;
+            const width = canvas.clientWidth || 700, height = 240;
+            canvas.width = width * scale; canvas.height = height * scale; ctx.scale(scale, scale);
+            const pad = { left: 42, right: 18, top: 16, bottom: 34 };
+            const quantities = points.map(p => p.Quantity); const max = Math.max(1, ...quantities);
+            const x = i => pad.left + (points.length === 1 ? (width - pad.left - pad.right) / 2 : i * (width - pad.left - pad.right) / (points.length - 1));
+            const y = q => height - pad.bottom - q * (height - pad.top - pad.bottom) / max;
+            ctx.strokeStyle = '#dee2e6'; ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, height-pad.bottom); ctx.lineTo(width-pad.right, height-pad.bottom); ctx.stroke();
+            ctx.fillStyle = '#6c757d'; ctx.font = '12px sans-serif'; ctx.fillText(String(max), 8, pad.top + 4); ctx.fillText('0', 25, height-pad.bottom + 4);
+            ctx.strokeStyle = '#6f42c1'; ctx.lineWidth = 3; ctx.beginPath(); points.forEach((p, i) => i ? ctx.lineTo(x(i), y(p.Quantity)) : ctx.moveTo(x(i), y(p.Quantity))); ctx.stroke();
+            points.forEach((p, i) => { ctx.fillStyle = '#6f42c1'; ctx.beginPath(); ctx.arc(x(i), y(p.Quantity), 4, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#343a40'; ctx.fillText(String(p.Quantity), x(i)-4, y(p.Quantity)-9); });
+            const first = new Date(points[0].ChangedAtUtc).toLocaleDateString(); const last = new Date(points[points.length-1].ChangedAtUtc).toLocaleDateString();
+            ctx.fillStyle = '#6c757d'; ctx.fillText(first, pad.left, height-10); ctx.textAlign = 'right'; ctx.fillText(last, width-pad.right, height-10);
+        })();
+    </script>
+}

@@ -27,6 +27,25 @@ public class CollectionItemApiClient(
             null,
             cancellationToken);
 
+    public Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetAllAsync(
+        string? search,
+        int changePeriodDays,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<IReadOnlyList<CollectionItemResponse>>(
+            HttpMethod.Get,
+            $"api/collection-items?search={Uri.EscapeDataString(search ?? string.Empty)}&days={changePeriodDays}",
+            null,
+            cancellationToken);
+
+    public Task<ApiResult<IReadOnlyList<CollectionItemResponse>>> GetForTradeAsync(
+        string userName,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<IReadOnlyList<CollectionItemResponse>>(
+            HttpMethod.Get,
+            $"api/collection-items/user/{Uri.EscapeDataString(userName)}",
+            null,
+            cancellationToken);
+
     public Task<ApiResult<CollectionItemResponse>> GetByIdAsync(
         int itemId,
         CancellationToken cancellationToken = default) =>
@@ -140,4 +159,7 @@ public class CollectionItemApiClient(
             return null;
         }
     }
+
+    public Task<ApiResult<IReadOnlyList<ItemTypeResponse>>> GetItemTypesAsync(string? search = null, CancellationToken cancellationToken = default) =>
+        SendAsync<IReadOnlyList<ItemTypeResponse>>(HttpMethod.Get, $"api/collection-items/item-types?search={Uri.EscapeDataString(search ?? string.Empty)}", null, cancellationToken);
 }

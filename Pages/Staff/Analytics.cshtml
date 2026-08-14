@@ -10,6 +10,9 @@ Tutorial Group:
     ViewData["Title"] = "Analytics Dashboard";
     var dashboard = Model.Dashboard;
     var maximumTrend = Math.Max(1, dashboard.Trends.Select(point => point.NewUsers + point.NewCollectionItems).DefaultIfEmpty().Max());
+    var maximumUserQuantity = Math.Max(1, dashboard.UserInventory.Select(user => user.CurrentQuantity).DefaultIfEmpty().Max());
+    var maximumTradedQuantity = Math.Max(1, dashboard.MostTradedItems.Select(item => item.QuantityTraded).DefaultIfEmpty().Max());
+    var maximumActivity = Math.Max(1, dashboard.MostActiveUsers.Select(user => user.ActivityScore).DefaultIfEmpty().Max());
 }
 
 <div class="analytics-heading">
@@ -18,14 +21,14 @@ Tutorial Group:
         <h1>Analytics Dashboard</h1>
         <p>Monitor membership, collection activity, stock health and category engagement.</p>
     </div>
-    <form method="get" class="analytics-range">
+    <div><a href="/api/analytics/exports/collections.csv" class="btn btn-success mb-2">Export collections CSV</a><form method="get" class="analytics-range">
         <label for="days">Reporting range</label>
         <select id="days" name="days" class="form-select" onchange="this.form.submit()">
             <option value="7" selected="@(Model.Days == 7)">Last 7 days</option>
             <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
             <option value="90" selected="@(Model.Days == 90)">Last 90 days</option>
         </select>
-    </form>
+    </form></div>
 </div>
 
 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -89,6 +92,51 @@ Tutorial Group:
                         </div>
                     </div>
                 }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading"><div><h2>Inventory by user</h2><p>Current owned quantity for every registered user account.</p></div></div>
+        @if (dashboard.UserInventory.Count == 0) { <p class="empty-state">No user inventory data is available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart">
+            @foreach (var user in dashboard.UserInventory)
+            {
+                var width = Math.Max(1, user.CurrentQuantity * 100 / maximumUserQuantity);
+                <div class="analytics-bar-row"><span>@user.UserName</span><div><i style="width:@(width)%"></i></div><strong>@user.CurrentQuantity units</strong><small>@user.CollectionItemCount types</small></div>
+            }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Most traded items</h2><p>Completed trades, ranked by total quantity.</p></div></div>
+        @if (dashboard.MostTradedItems.Count == 0) { <p class="empty-state">No completed trades are available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart compact">
+            @foreach (var item in dashboard.MostTradedItems)
+            {
+                var width = Math.Max(1, item.QuantityTraded * 100 / maximumTradedQuantity);
+                <div class="analytics-bar-row"><span>@item.ItemName <small>@item.ItemTypeId</small></span><div><i style="width:@(width)%"></i></div><strong>@item.QuantityTraded units</strong><small>@item.TradeCount trades</small></div>
+            }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Most active users</h2><p>Trade participation and inventory changes in the selected range.</p></div></div>
+        @if (dashboard.MostActiveUsers.Count == 0) { <p class="empty-state">No user activity is available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart compact">
+            @foreach (var user in dashboard.MostActiveUsers)
+            {
+                var width = Math.Max(1, user.ActivityScore * 100 / maximumActivity);
+                <div class="analytics-bar-row"><span>@user.UserName</span><div><i class="activity" style="width:@(width)%"></i></div><strong>@user.ActivityScore actions</strong><small>@user.Trades trades · @user.InventoryChanges inventory changes</small></div>
+            }
             </div>
         }
     </section>

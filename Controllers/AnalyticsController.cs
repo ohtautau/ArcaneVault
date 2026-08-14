@@ -30,4 +30,11 @@ public class AnalyticsController(IAnalyticsService analyticsService) : Controlle
 
         return Ok(await analyticsService.GetDashboardAsync(days, cancellationToken));
     }
+
+    [HttpGet("exports/collections.csv")]
+    public async Task<IActionResult> ExportCollections(CancellationToken cancellationToken)
+    {
+        var content = await analyticsService.ExportCollectionsCsvAsync(cancellationToken);
+        return File(content, "text/csv; charset=utf-8", $"arcanevault-collections-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
 }

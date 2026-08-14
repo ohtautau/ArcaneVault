@@ -15,6 +15,9 @@ public static class DbInitializer
 
     public static async Task InitializeAsync(IServiceProvider services)
     {
+        var dbContext = services.GetRequiredService<ArcaneVaultDbContext>();
+        await dbContext.Database.MigrateAsync();
+
         var configuration = services.GetRequiredService<IConfiguration>();
         var userName = configuration["SeedStaff:UserName"]?.Trim();
         var email = configuration["SeedStaff:Email"]?.Trim();
@@ -27,8 +30,6 @@ public static class DbInitializer
             return;
         }
 
-        var dbContext = services.GetRequiredService<ArcaneVaultDbContext>();
-        await dbContext.Database.MigrateAsync();
         var staffRoleExists = await dbContext.ArcaneVaultUserRoles
             .AnyAsync(role =>
                 role.RoleId == StaffRoleId && role.RoleName == StaffRoleName);

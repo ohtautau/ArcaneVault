@@ -5,6 +5,7 @@
 using ArcaneVault.Data;
 using ArcaneVault.Models.Responses;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace ArcaneVault.Services;
 
@@ -68,10 +69,10 @@ public class AnalyticsService(ArcaneVaultDbContext dbContext) : IAnalyticsServic
                 : Math.Round(category.CollectionItemCount * 100m / totalItems, 1);
         }
 
-        var topCollectors = await dbContext.ArcaneVaultUsers
+        var userInventory = await dbContext.ArcaneVaultUsers
             .AsNoTracking()
             .Where(user => user.Role.RoleName == "User")
-            .Select(user => new TopCollectorResponse
+            .Select(user => new UserInventoryResponse
             {
                 UserName = user.UserName,
                 CollectionItemCount = user.CollectionItems.Count,
@@ -79,8 +80,46 @@ public class AnalyticsService(ArcaneVaultDbContext dbContext) : IAnalyticsServic
             })
             .OrderByDescending(user => user.CollectionItemCount)
             .ThenBy(user => user.UserName)
-            .Take(5)
             .ToListAsync(cancellationToken);
+        var topCollectors = userInventory.Take(5).Select(user => new TopCollectorResponse
+        {
+            UserName = user.UserName,
+            CollectionItemCount = user.CollectionItemCount,
+            CurrentQuantity = user.CurrentQuantity
+        }).ToList();
+
+        var completedTradeItems = await dbContext.TradeItems.AsNoTracking()
+            .Where(item => item.Trade.Status == "Completed")
+            .Select(item => new { item.TradeId, item.CollectionItem.ItemTypeId, item.CollectionItem.ItemName, item.Quantity })
+            .ToListAsync(cancellationToken);
+        var mostTradedItems = completedTradeItems
+            .GroupBy(item => new { item.ItemTypeId, item.ItemName })
+            .Select(group => new MostTradedItemResponse
+            {
+                ItemTypeId = group.Key.ItemTypeId,
+                ItemName = group.Key.ItemName,
+                TradeCount = group.Select(item => item.TradeId).Distinct().Count(),
+                QuantityTraded = group.Sum(item => item.Quantity)
+            })
+            .OrderByDescending(item => item.QuantityTraded).ThenByDescending(item => item.TradeCount).Take(10).ToList();
+
+        var rangeTrades = await dbContext.Trades.AsNoTracking()
+            .Where(trade => trade.CreatedAtUtc >= fromUtc || trade.UpdatedAtUtc >= fromUtc)
+            .Select(trade => new { trade.RequesterUserName, trade.RecipientUserName })
+            .ToListAsync(cancellationToken);
+        var rangeChanges = await dbContext.CollectionItemQuantityHistory.AsNoTracking()
+            .Where(change => change.ChangedAtUtc >= fromUtc)
+            .GroupBy(change => change.CollectionItem.UserName)
+            .Select(group => new { UserName = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.UserName, item => item.Count, cancellationToken);
+        var mostActiveUsers = userInventory.Select(user =>
+        {
+            var trades = rangeTrades.Count(trade =>
+                string.Equals(trade.RequesterUserName, user.UserName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(trade.RecipientUserName, user.UserName, StringComparison.OrdinalIgnoreCase));
+            var changes = rangeChanges.GetValueOrDefault(user.UserName);
+            return new ActiveUserResponse { UserName = user.UserName, Trades = trades, InventoryChanges = changes, ActivityScore = trades + changes };
+        }).OrderByDescending(user => user.ActivityScore).ThenByDescending(user => user.Trades).ThenBy(user => user.UserName).Take(10).ToList();
 
         var recentUsers = await dbContext.ArcaneVaultUsers
             .AsNoTracking()
@@ -104,6 +143,22 @@ public class AnalyticsService(ArcaneVaultDbContext dbContext) : IAnalyticsServic
                 OccurredAtUtc = item.CreatedAtUtc
             })
             .ToListAsync(cancellationToken);
+        var recentTrades = await dbContext.Trades.AsNoTracking()
+            .OrderByDescending(trade => trade.UpdatedAtUtc ?? trade.CreatedAtUtc).Take(8)
+            .Select(trade => new RecentActivityResponse
+            {
+                ActivityType = "Trade",
+                Description = $"Trade #{trade.TradeId}: {trade.RequesterUserName} ↔ {trade.RecipientUserName} — {trade.Status}",
+                OccurredAtUtc = trade.UpdatedAtUtc ?? trade.CreatedAtUtc
+            }).ToListAsync(cancellationToken);
+        var recentQuantityChanges = await dbContext.CollectionItemQuantityHistory.AsNoTracking()
+            .OrderByDescending(change => change.ChangedAtUtc).Take(8)
+            .Select(change => new RecentActivityResponse
+            {
+                ActivityType = "Inventory",
+                Description = $"{change.CollectionItem.UserName}'s {change.CollectionItem.ItemName} quantity became {change.Quantity}",
+                OccurredAtUtc = change.ChangedAtUtc
+            }).ToListAsync(cancellationToken);
 
         return new AnalyticsDashboardResponse
         {
@@ -127,10 +182,38 @@ public class AnalyticsService(ArcaneVaultDbContext dbContext) : IAnalyticsServic
             Trends = trends,
             PopularCategories = categories,
             TopCollectors = topCollectors,
-            RecentActivity = recentUsers.Concat(recentItems)
+            UserInventory = userInventory,
+            MostTradedItems = mostTradedItems,
+            MostActiveUsers = mostActiveUsers,
+            RecentActivity = recentUsers.Concat(recentItems).Concat(recentTrades).Concat(recentQuantityChanges)
                 .OrderByDescending(activity => activity.OccurredAtUtc)
-                .Take(8)
+                .Take(12)
                 .ToList()
         };
     }
+
+    public async Task<byte[]> ExportCollectionsCsvAsync(CancellationToken cancellationToken = default)
+    {
+        var rows = await dbContext.CollectionItems.AsNoTracking()
+            .Include(item => item.CollectionItemCategories).ThenInclude(link => link.Category)
+            .OrderBy(item => item.UserName).ThenBy(item => item.ItemName)
+            .ToListAsync(cancellationToken);
+        var csv = new StringBuilder();
+        csv.AppendLine("Item Type ID,Inventory Record ID,Item Name,Owner,Starting Quantity,Current Quantity,Locked Quantity,Available Quantity,Categories,Created UTC");
+        foreach (var row in rows)
+        {
+            csv.AppendLine(string.Join(",", new[]
+            {
+                Csv(row.ItemTypeId), row.ItemId.ToString(), Csv(row.ItemName), Csv(row.UserName),
+                row.StartingQuantity.ToString(), row.CurrentQuantity.ToString(), row.LockedQuantity.ToString(),
+                (row.CurrentQuantity - row.LockedQuantity).ToString(),
+                Csv(string.Join(" | ", row.CollectionItemCategories.OrderBy(link => link.CategoryCode).Select(link => link.Category.CategoryName))),
+                Csv(row.CreatedAtUtc.ToString("O"))
+            }));
+        }
+        var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+        return encoding.GetPreamble().Concat(encoding.GetBytes(csv.ToString())).ToArray();
+    }
+
+    private static string Csv(string value) => $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 }

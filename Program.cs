@@ -24,6 +24,9 @@ builder.Services.AddScoped<ICollectionItemApiClient, CollectionItemApiClient>();
 builder.Services.AddScoped<ICollectionItemService, CollectionItemService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IAnalyticsApiClient, AnalyticsApiClient>();
+builder.Services.AddScoped<IWishlistService, WishlistService>();
+builder.Services.AddScoped<ITradeService, TradeService>();
+builder.Services.AddScoped<IExchangeApiClient, ExchangeApiClient>();
 builder.Services.AddDbContext<ArcaneVaultDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("ArcaneVaultDatabase")));
 builder.Services

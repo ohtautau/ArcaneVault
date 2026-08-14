@@ -31,10 +31,19 @@ Tutorial Group:
                placeholder="Search any item field or category" />
     </div>
     <div class="col-auto">
+        <label asp-for="Days" class="visually-hidden">Quantity change period</label>
+        <select asp-for="Days" class="form-select" aria-label="Quantity change period" onchange="this.form.submit()">
+            <option value="1">Last 1 day</option>
+            <option value="3">Last 3 days</option>
+            <option value="7">Last week</option>
+            <option value="30">Last month</option>
+        </select>
+    </div>
+    <div class="col-auto">
         <button type="submit" class="btn btn-outline-primary">Search</button>
         @if (!string.IsNullOrWhiteSpace(Model.Search))
         {
-            <a asp-page="Index" class="btn btn-outline-secondary">Clear</a>
+            <a asp-page="Index" asp-route-days="@Model.Days" class="btn btn-outline-secondary">Clear</a>
         }
     </div>
 </form>
@@ -60,7 +69,8 @@ else
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Item Type ID</th>
+                    <th>Inventory ID</th>
                     <th>Name</th>
                     @if (User.IsInRole("Staff"))
                     {
@@ -68,6 +78,9 @@ else
                     }
                     <th>Starting</th>
                     <th>Current</th>
+                    <th>Locked</th>
+                    <th>Available</th>
+                    @if (!User.IsInRole("Staff")) { <th>Recent Change</th> }
                     <th>Categories</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -76,6 +89,7 @@ else
                 @foreach (var item in Model.Items)
                 {
                     <tr>
+                        <td><strong>@item.ItemTypeId</strong></td>
                         <td>@item.ItemId</td>
                         <td>@item.ItemName</td>
                         @if (User.IsInRole("Staff"))
@@ -84,6 +98,16 @@ else
                         }
                         <td>@item.StartingQuantity</td>
                         <td>@item.CurrentQuantity</td>
+                        <td>@item.LockedQuantity</td>
+                        <td>@(item.CurrentQuantity - item.LockedQuantity)</td>
+                        @if (!User.IsInRole("Staff"))
+                        {
+                            <td>
+                                @if (item.RecentQuantityChange > 0) { <span class="fw-semibold text-success">+@item.RecentQuantityChange</span> }
+                                else if (item.RecentQuantityChange < 0) { <span class="fw-semibold text-danger">@item.RecentQuantityChange</span> }
+                                else { <span class="text-muted">0</span> }
+                            </td>
+                        }
                         <td>@string.Join(", ", item.Categories.Select(category => category.CategoryName))</td>
                         <td class="text-end">
                             <a asp-page="Details" asp-route-itemId="@item.ItemId"

@@ -12,6 +12,7 @@ public enum CollectionItemStatus
     NotFound,
     Forbidden,
     InvalidCategories,
+    InvalidItemType,
     Conflict
 }
 
