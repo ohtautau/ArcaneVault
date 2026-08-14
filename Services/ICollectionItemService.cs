@@ -10,10 +10,12 @@ namespace ArcaneVault.Services;
 
 public interface ICollectionItemService
 {
+    Task<IReadOnlyList<ItemTypeResponse>> GetItemTypesAsync(string? search, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CollectionItemResponse>> GetAllAsync(
         string userName,
         bool isStaff,
         string? search,
+        int changePeriodDays,
         CancellationToken cancellationToken = default);
 
     Task<CollectionItemResult> GetByIdAsync(

@@ -19,13 +19,14 @@ Tutorial Group:
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
-                <label class="form-label">Item ID</label>
+                <label class="form-label">Inventory Record ID</label>
                 <input class="form-control" value="@Model.ItemId" disabled />
             </div>
+            <div class="mb-3"><label class="form-label">Permanent Item Type ID</label><input class="form-control" value="@Model.ItemTypeId" disabled /></div>
 
             <div class="mb-3">
                 <label asp-for="Input.ItemName" class="form-label"></label>
-                <input asp-for="Input.ItemName" class="form-control" />
+                <input asp-for="Input.ItemName" class="form-control" readonly />
                 <span asp-validation-for="Input.ItemName" class="text-danger"></span>
             </div>
 

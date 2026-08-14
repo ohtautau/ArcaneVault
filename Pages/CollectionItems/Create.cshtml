@@ -54,4 +54,22 @@ Tutorial Group:
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const itemTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ItemTypes));
+        const typeId = document.getElementById('Input_ItemTypeId'); const itemName = document.getElementById('Input_ItemName');
+        const syncType = () => { if (document.getElementById('existing-type').checked) { const match = itemTypes.find(x => x.ItemTypeId.toLowerCase() === typeId.value.trim().toLowerCase()); if (match) itemName.value = match.ItemName; } itemName.readOnly = document.getElementById('existing-type').checked; };
+        typeId.addEventListener('input', syncType); document.querySelectorAll('[name="Input.IsNewItemType"]').forEach(x => x.addEventListener('change', syncType)); syncType();
+    </script>
 }
+            <fieldset class="mb-3">
+                <legend class="h6">Item type</legend>
+                <div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="false" id="existing-type" checked="@(!Model.Input.IsNewItemType)" /><label class="form-check-label" for="existing-type">Use an existing item type</label></div>
+                <div class="form-check"><input asp-for="Input.IsNewItemType" class="form-check-input" type="radio" value="true" id="new-type" checked="@Model.Input.IsNewItemType" /><label class="form-check-label" for="new-type">This is a new item type</label></div>
+            </fieldset>
+
+            <div class="mb-3">
+                <label asp-for="Input.ItemTypeId" class="form-label"></label>
+                <input asp-for="Input.ItemTypeId" class="form-control" list="item-type-options" placeholder="Search by permanent item ID or name" />
+                <datalist id="item-type-options">@foreach (var type in Model.ItemTypes) { <option value="@type.ItemTypeId">@type.ItemName</option> }</datalist>
+                <div class="form-text">For an existing type, select its ID. For a new type, enter a unique ID or leave blank to generate one.</div>
+            </div>

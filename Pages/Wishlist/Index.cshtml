@@ -1,0 +1,28 @@
+@page
+@model ArcaneVault.Pages.Wishlist.IndexModel
+@{ ViewData["Title"] = "My Wishlist"; }
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div><h1>My Wishlist</h1><p class="text-muted">Keep track of collectibles you want and receive trade offers.</p></div>
+    <a asp-page="Browse" class="btn btn-outline-primary">Browse other wishlists</a>
+</div>
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm"><div class="card-body">
+            <h2 class="h5">Add a wanted item</h2>
+            <form method="post" asp-page-handler="Create">
+                <div class="mb-3"><label asp-for="Input.ItemName" class="form-label"></label><input asp-for="Input.ItemName" class="form-control" /><span asp-validation-for="Input.ItemName" class="text-danger"></span></div>
+                <div class="mb-3"><label asp-for="Input.DesiredQuantity" class="form-label"></label><input asp-for="Input.DesiredQuantity" class="form-control" /><span asp-validation-for="Input.DesiredQuantity" class="text-danger"></span></div>
+                <div class="mb-3"><label asp-for="Input.Notes" class="form-label"></label><textarea asp-for="Input.Notes" class="form-control" rows="3" placeholder="Edition, condition, year, or other preferences"></textarea><span asp-validation-for="Input.Notes" class="text-danger"></span></div>
+                <button class="btn btn-primary" type="submit">Add to Wishlist</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-lg-8">
+        @if (Model.Items.Count == 0) { <div class="alert alert-info">Your wishlist is empty.</div> }
+        else { <div class="wishlist-grid">@foreach (var item in Model.Items) { <article class="wishlist-card"><div><span class="wishlist-owner">Wanted quantity: @item.DesiredQuantity</span><h2>@item.ItemName</h2><p>@(item.Notes ?? "No additional preferences.")</p></div><div class="d-flex justify-content-between align-items-center"><span class="badge text-bg-light">@item.PendingTradeCount pending offer(s)</span><div><a asp-page="Edit" asp-route-id="@item.WishlistItemId" class="btn btn-sm btn-outline-primary">Edit</a><form method="post" asp-page-handler="Delete" asp-route-id="@item.WishlistItemId" class="d-inline"><button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this wishlist item?')">Delete</button></form></div></div></article> }</div> }
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

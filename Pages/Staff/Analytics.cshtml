@@ -1,0 +1,184 @@
+@page
+<!--
+Name:
+Student Admin No.:
+Tutorial Group:
+-->
+
+@model ArcaneVault.Pages.Staff.AnalyticsModel
+@{
+    ViewData["Title"] = "Analytics Dashboard";
+    var dashboard = Model.Dashboard;
+    var maximumTrend = Math.Max(1, dashboard.Trends.Select(point => point.NewUsers + point.NewCollectionItems).DefaultIfEmpty().Max());
+    var maximumUserQuantity = Math.Max(1, dashboard.UserInventory.Select(user => user.CurrentQuantity).DefaultIfEmpty().Max());
+    var maximumTradedQuantity = Math.Max(1, dashboard.MostTradedItems.Select(item => item.QuantityTraded).DefaultIfEmpty().Max());
+    var maximumActivity = Math.Max(1, dashboard.MostActiveUsers.Select(user => user.ActivityScore).DefaultIfEmpty().Max());
+}
+
+<div class="analytics-heading">
+    <div>
+        <span class="analytics-eyebrow">Staff workspace</span>
+        <h1>Analytics Dashboard</h1>
+        <p>Monitor membership, collection activity, stock health and category engagement.</p>
+    </div>
+    <div><a href="/api/analytics/exports/collections.csv" class="btn btn-success mb-2">Export collections CSV</a><form method="get" class="analytics-range">
+        <label for="days">Reporting range</label>
+        <select id="days" name="days" class="form-select" onchange="this.form.submit()">
+            <option value="7" selected="@(Model.Days == 7)">Last 7 days</option>
+            <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
+            <option value="90" selected="@(Model.Days == 90)">Last 90 days</option>
+        </select>
+    </form></div>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<section class="analytics-cards" aria-label="Key metrics">
+    <article class="metric-card"><span>Registered users</span><strong>@dashboard.TotalUsers</strong><small>+@dashboard.NewUsers in range</small></article>
+    <article class="metric-card"><span>Collection items</span><strong>@dashboard.TotalCollectionItems</strong><small>+@dashboard.NewCollectionItems in range</small></article>
+    <article class="metric-card"><span>Categories</span><strong>@dashboard.TotalCategories</strong><small>Active catalogue groups</small></article>
+    <article class="metric-card"><span>Current quantity</span><strong>@dashboard.TotalCurrentQuantity</strong><small>@dashboard.InventoryRetentionPercentage% inventory retained</small></article>
+    <article class="metric-card metric-warning"><span>Low stock</span><strong>@dashboard.LowStockItems</strong><small>1-2 units remaining</small></article>
+    <article class="metric-card metric-danger"><span>Depleted</span><strong>@dashboard.DepletedItems</strong><small>No units remaining</small></article>
+</section>
+
+<div class="analytics-grid">
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading">
+            <div><h2>Growth activity</h2><p>New users and collection items over the selected range.</p></div>
+            <div class="chart-legend"><span class="legend-users">Users</span><span class="legend-items">Items</span></div>
+        </div>
+        @if (dashboard.Trends.All(point => point.NewUsers == 0 && point.NewCollectionItems == 0))
+        {
+            <p class="empty-state">No new activity was recorded in this period.</p>
+        }
+        else
+        {
+            <div class="trend-chart" role="img" aria-label="Daily new user and collection item activity">
+                @foreach (var point in dashboard.Trends)
+                {
+                    var userHeight = Math.Max(2, point.NewUsers * 100 / maximumTrend);
+                    var itemHeight = Math.Max(2, point.NewCollectionItems * 100 / maximumTrend);
+                    <div class="trend-day" title="@point.Date.ToString("dd MMM"): @point.NewUsers users, @point.NewCollectionItems items">
+                        <div class="trend-bars">
+                            <span class="trend-user" style="height: @(userHeight)%"></span>
+                            <span class="trend-item" style="height: @(itemHeight)%"></span>
+                        </div>
+                        @if (dashboard.RangeDays <= 7 || point.Date.DayOfWeek == DayOfWeek.Monday)
+                        {
+                            <small>@point.Date.ToString("dd MMM")</small>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Popular categories</h2><p>Share of collection items.</p></div></div>
+        @if (dashboard.PopularCategories.Count == 0)
+        {
+            <p class="empty-state">No category data is available.</p>
+        }
+        else
+        {
+            <div class="ranking-list">
+                @foreach (var category in dashboard.PopularCategories)
+                {
+                    <div class="ranking-item">
+                        <div><strong>@category.CategoryName</strong><span>@category.CollectionItemCount item(s)</span></div>
+                        <div class="progress" role="progressbar" aria-valuenow="@category.Percentage" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: @category.Percentage.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading"><div><h2>Inventory by user</h2><p>Current owned quantity for every registered user account.</p></div></div>
+        @if (dashboard.UserInventory.Count == 0) { <p class="empty-state">No user inventory data is available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart">
+            @foreach (var user in dashboard.UserInventory)
+            {
+                var width = Math.Max(1, user.CurrentQuantity * 100 / maximumUserQuantity);
+                <div class="analytics-bar-row"><span>@user.UserName</span><div><i style="width:@(width)%"></i></div><strong>@user.CurrentQuantity units</strong><small>@user.CollectionItemCount types</small></div>
+            }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Most traded items</h2><p>Completed trades, ranked by total quantity.</p></div></div>
+        @if (dashboard.MostTradedItems.Count == 0) { <p class="empty-state">No completed trades are available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart compact">
+            @foreach (var item in dashboard.MostTradedItems)
+            {
+                var width = Math.Max(1, item.QuantityTraded * 100 / maximumTradedQuantity);
+                <div class="analytics-bar-row"><span>@item.ItemName <small>@item.ItemTypeId</small></span><div><i style="width:@(width)%"></i></div><strong>@item.QuantityTraded units</strong><small>@item.TradeCount trades</small></div>
+            }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Most active users</h2><p>Trade participation and inventory changes in the selected range.</p></div></div>
+        @if (dashboard.MostActiveUsers.Count == 0) { <p class="empty-state">No user activity is available.</p> }
+        else
+        {
+            <div class="analytics-bar-chart compact">
+            @foreach (var user in dashboard.MostActiveUsers)
+            {
+                var width = Math.Max(1, user.ActivityScore * 100 / maximumActivity);
+                <div class="analytics-bar-row"><span>@user.UserName</span><div><i class="activity" style="width:@(width)%"></i></div><strong>@user.ActivityScore actions</strong><small>@user.Trades trades · @user.InventoryChanges inventory changes</small></div>
+            }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-panel">
+        <div class="panel-heading"><div><h2>Top collectors</h2><p>Users ranked by distinct collection items.</p></div></div>
+        @if (dashboard.TopCollectors.Count == 0)
+        {
+            <p class="empty-state">No collector data is available.</p>
+        }
+        else
+        {
+            <ol class="collector-list">
+                @foreach (var collector in dashboard.TopCollectors)
+                {
+                    <li><span>@collector.UserName</span><strong>@collector.CollectionItemCount items</strong><small>@collector.CurrentQuantity units</small></li>
+                }
+            </ol>
+        }
+    </section>
+
+    <section class="analytics-panel analytics-panel-wide">
+        <div class="panel-heading"><div><h2>Recent activity</h2><p>Latest registrations and collection additions.</p></div></div>
+        @if (dashboard.RecentActivity.Count == 0)
+        {
+            <p class="empty-state">No recent activity is available.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table analytics-table">
+                    <thead><tr><th>Type</th><th>Activity</th><th>UTC time</th></tr></thead>
+                    <tbody>
+                    @foreach (var activity in dashboard.RecentActivity)
+                    {
+                        <tr><td><span class="activity-badge">@activity.ActivityType</span></td><td>@activity.Description</td><td>@activity.OccurredAtUtc.ToString("dd MMM yyyy, HH:mm")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+<p class="analytics-updated">Generated @dashboard.GeneratedAtUtc.ToString("dd MMM yyyy, HH:mm:ss") UTC</p>

@@ -1,0 +1,50 @@
+@page
+@model ArcaneVault.Pages.TradeRequests.CreateModel
+@{ ViewData["Title"] = "Propose Trade"; }
+<h1>Propose a Trade</h1>
+<div class="trade-summary mb-4"><h2>Select a recipient</h2><p>The recipient accepts or rejects first. Acceptance locks the selected quantities; inventory changes only after both users confirm the real-world exchange.</p></div>
+<form method="get" class="mb-4" id="partner-search-form"><label for="partner-search" class="form-label">Search by username or email</label><div class="row g-2"><div class="col-md-6"><input id="partner-search" class="form-control" autocomplete="off" placeholder="Type a username or email" value="@Model.Input.RecipientUserName" /><input type="hidden" name="recipientUserName" id="recipient-user-name" value="@Model.Input.RecipientUserName" /><div id="partner-matches" class="list-group mt-1"></div></div><div class="col-auto"><button class="btn btn-outline-primary">Load inventory</button></div></div></form>
+@if (string.IsNullOrWhiteSpace(Model.Input.RecipientUserName)) { <div class="alert alert-info">Choose the user you want to trade with.</div> }
+else if (Model.OfferedItems.Count == 0 || Model.RequestedItems.Count == 0) { <div class="alert alert-warning">Both users need collection items before a trade can be proposed.</div> }
+else {
+<form method="post" class="col-lg-7">
+    <input asp-for="Input.RecipientUserName" type="hidden" />
+    <input asp-for="Input.WishlistItemId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="alert alert-light small"><strong>Permanent item type IDs:</strong><br/>Mine: @string.Join(", ", Model.OfferedItems.Select(i => $"{i.ItemName} [{i.ItemTypeId}]"))<br/>@Model.Input.RecipientUserName: @string.Join(", ", Model.RequestedItems.Select(i => $"{i.ItemName} [{i.ItemTypeId}]"))</div>
+    <fieldset class="mb-4 trade-picker" data-picker><legend class="h6">I offer (X) — <span data-count>0</span> selected</legend><input type="search" class="form-control mb-2" data-inventory-search placeholder="Search my inventory by item name, category, ID, or quantity" />
+        <div class="trade-picker-options">@foreach (var item in Model.OfferedItems.Where(i => i.CurrentQuantity > i.LockedQuantity)) { var available = item.CurrentQuantity - item.LockedQuantity; var selected = Model.Input.OfferedCollectionItemIds.Contains(item.ItemId); <div class="trade-picker-item" data-search="@($"{item.ItemName} {item.ItemId} {available} {string.Join(" ", item.Categories.Select(c => $"{c.CategoryCode} {c.CategoryName}"))}")"><label class="form-check mb-0"><input class="form-check-input" data-item-check type="checkbox" name="Input.OfferedCollectionItemIds" value="@item.ItemId" checked="@selected" /> <span class="form-check-label"><strong>@item.ItemName</strong><small class="text-muted">@available available@(item.LockedQuantity > 0 ? $" · {item.LockedQuantity} locked" : "")@(item.Categories.Count > 0 ? $" · {string.Join(" · ", item.Categories.Select(c => c.CategoryName))}" : "")</small></span></label><div class="trade-quantity"><label for="offer-qty-@item.ItemId">Quantity to offer</label><input id="offer-qty-@item.ItemId" class="form-control form-control-sm" data-item-quantity type="number" name="Input.OfferedQuantities[@item.ItemId]" value="@(Model.Input.OfferedQuantities.GetValueOrDefault(item.ItemId, 1))" min="1" max="@available" disabled="@(!selected)" /></div></div> }</div><p class="small text-muted mt-2 mb-0" data-no-match hidden>No inventory items match this keyword.</p></fieldset>
+    <fieldset class="mb-4 trade-picker" data-picker><legend class="h6">I request from @Model.Input.RecipientUserName (Y) — <span data-count>0</span> selected</legend><input type="search" class="form-control mb-2" data-inventory-search placeholder="Search their inventory by item name, category, ID, or quantity" />
+        <div class="trade-picker-options">@foreach (var item in Model.RequestedItems.Where(i => i.CurrentQuantity > i.LockedQuantity)) { var available = item.CurrentQuantity - item.LockedQuantity; var selected = Model.Input.RequestedCollectionItemIds.Contains(item.ItemId); <div class="trade-picker-item" data-search="@($"{item.ItemName} {item.ItemId} {available} {string.Join(" ", item.Categories.Select(c => $"{c.CategoryCode} {c.CategoryName}"))}")"><label class="form-check mb-0"><input class="form-check-input" data-item-check type="checkbox" name="Input.RequestedCollectionItemIds" value="@item.ItemId" checked="@selected" /> <span class="form-check-label"><strong>@item.ItemName</strong><small class="text-muted">@available available@(item.LockedQuantity > 0 ? $" · {item.LockedQuantity} locked" : "")@(item.Categories.Count > 0 ? $" · {string.Join(" · ", item.Categories.Select(c => c.CategoryName))}" : "")</small></span></label><div class="trade-quantity"><label for="request-qty-@item.ItemId">Quantity wanted</label><input id="request-qty-@item.ItemId" class="form-control form-control-sm" data-item-quantity type="number" name="Input.RequestedQuantities[@item.ItemId]" value="@(Model.Input.RequestedQuantities.GetValueOrDefault(item.ItemId, 1))" min="1" max="@available" disabled="@(!selected)" /></div></div> }</div><p class="small text-muted mt-2 mb-0" data-no-match hidden>No inventory items match this keyword.</p></fieldset>
+    <div class="mb-3"><label asp-for="Input.Message" class="form-label"></label><textarea asp-for="Input.Message" class="form-control" rows="4" placeholder="Explain the proposed exchange or condition."></textarea><span asp-validation-for="Input.Message" class="text-danger"></span></div>
+    <button class="btn btn-primary">Send trade request</button> <a asp-page="/Wishlist/Browse" class="btn btn-outline-secondary">Cancel</a>
+</form> }
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script>
+document.querySelectorAll('[data-picker]').forEach(picker => {
+    const search = picker.querySelector('[data-inventory-search]');
+    const items = [...picker.querySelectorAll('.trade-picker-item')];
+    const count = picker.querySelector('[data-count]');
+    const noMatch = picker.querySelector('[data-no-match]');
+    const refreshCount = () => count.textContent = items.filter(x => x.querySelector('[data-item-check]').checked).length;
+    search.addEventListener('input', () => {
+        const term = search.value.trim().toLowerCase(); let visible = 0;
+        items.forEach(item => { const show = item.dataset.search.toLowerCase().includes(term); item.hidden = !show; if (show) visible++; });
+        noMatch.hidden = visible !== 0;
+    });
+    items.forEach(item => { const check = item.querySelector('[data-item-check]'); const quantity = item.querySelector('[data-item-quantity]'); check.addEventListener('change', () => { quantity.disabled = !check.checked; refreshCount(); }); }); refreshCount();
+});
+const partners = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Partners));
+const partnerSearch = document.getElementById('partner-search');
+const recipientInput = document.getElementById('recipient-user-name');
+const partnerMatches = document.getElementById('partner-matches');
+const renderPartnerMatches = () => {
+    const term = partnerSearch.value.trim().toLowerCase(); partnerMatches.replaceChildren(); recipientInput.value = '';
+    if (!term) return;
+    partners.filter(p => p.UserName.toLowerCase().includes(term) || p.Email.toLowerCase().includes(term)).slice(0, 8).forEach(p => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'list-group-item list-group-item-action';
+        button.textContent = `${p.UserName} — ${p.Email}`; button.addEventListener('click', () => { partnerSearch.value = `${p.UserName} — ${p.Email}`; partnerSearch.setCustomValidity(''); recipientInput.value = p.UserName; partnerMatches.replaceChildren(); }); partnerMatches.appendChild(button);
+    });
+};
+partnerSearch.addEventListener('input', renderPartnerMatches);
+document.getElementById('partner-search-form').addEventListener('submit', event => { if (!recipientInput.value) { event.preventDefault(); partnerSearch.setCustomValidity('Select a matching user from the results.'); partnerSearch.reportValidity(); } });
+</script> }

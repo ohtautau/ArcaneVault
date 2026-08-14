@@ -1,0 +1,25 @@
+@page "{id:int}"
+@model ArcaneVault.Pages.TradeRequests.DetailsModel
+@{ ViewData["Title"] = $"Trade #{Model.Trade.TradeId}"; var trade = Model.Trade; }
+
+<div class="d-flex justify-content-between align-items-start mb-4"><div><h1>Trade #@trade.TradeId</h1><p class="text-muted mb-0">@trade.RequesterUserName ↔ @trade.RecipientUserName</p></div><span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span></div>
+
+<dl class="row">
+    <dt class="col-sm-3">Requester</dt><dd class="col-sm-9">@trade.RequesterUserName</dd>
+    <dt class="col-sm-3">Recipient</dt><dd class="col-sm-9">@trade.RecipientUserName</dd>
+    <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm:ss") UTC</dd>
+    <dt class="col-sm-3">Last updated</dt><dd class="col-sm-9">@(trade.UpdatedAtUtc?.ToString("dd MMM yyyy, HH:mm:ss 'UTC'") ?? "—")</dd>
+    <dt class="col-sm-3">Requester confirmed</dt><dd class="col-sm-9">@(trade.RequesterConfirmedComplete ? "Yes" : "No")</dd>
+    <dt class="col-sm-3">Recipient confirmed</dt><dd class="col-sm-9">@(trade.RecipientConfirmedComplete ? "Yes" : "No")</dd>
+    @if (!string.IsNullOrWhiteSpace(trade.Message)) { <dt class="col-sm-3">Request message</dt><dd class="col-sm-9">@trade.Message</dd> }
+</dl>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6"><section class="card h-100"><div class="card-body"><h2 class="h5">Offered by @trade.RequesterUserName</h2><partial name="_TradeItemDetails" model="trade.OfferedItems" /></div></section></div>
+    <div class="col-lg-6"><section class="card h-100"><div class="card-body"><h2 class="h5">Requested from @trade.RecipientUserName</h2><partial name="_TradeItemDetails" model="trade.RequestedItems" /></div></section></div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(trade.DisputeReason)) { <section class="alert alert-warning"><h2 class="h5">Dispute</h2><p class="mb-0">@trade.DisputeReason</p></section> }
+@if (!string.IsNullOrWhiteSpace(trade.ResolvedByStaffUserName)) { <section class="card mb-4"><div class="card-body"><h2 class="h5">Staff resolution</h2><p><strong>Handled by:</strong> @trade.ResolvedByStaffUserName</p><p class="mb-0">@trade.StaffResolutionNote</p></div></section> }
+
+<a asp-page="@(User.IsInRole("Staff") ? "/Staff/Trades" : "/TradeRequests/Index")" class="btn btn-outline-secondary">Back</a>
