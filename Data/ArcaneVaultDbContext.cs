@@ -206,11 +206,15 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
         entity.ToTable("TradeItems");
         entity.HasKey(item => item.TradeItemId);
         entity.Property(item => item.Side).HasMaxLength(20).IsRequired();
+        entity.Property(item => item.Quantity).IsRequired();
         entity.HasOne(item => item.Trade).WithMany(trade => trade.TradeItems)
             .HasForeignKey(item => item.TradeId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne(item => item.CollectionItem).WithMany(collection => collection.TradeItems)
             .HasForeignKey(item => item.CollectionItemId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne(item => item.TransferredCollectionItem).WithMany(collection => collection.ReceivedTradeItems)
+            .HasForeignKey(item => item.TransferredCollectionItemId).OnDelete(DeleteBehavior.Restrict);
         entity.HasIndex(item => new { item.TradeId, item.CollectionItemId }).IsUnique();
         entity.HasQueryFilter(item => !item.CollectionItem.IsDeleted);
+        entity.ToTable(table => table.HasCheckConstraint("CK_TradeItems_Quantity_Positive", "Quantity > 0"));
     }
 }

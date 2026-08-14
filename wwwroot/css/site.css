@@ -45,10 +45,11 @@ body {
 .trade-message { margin: .75rem 0; padding: .6rem .85rem; border-left: 3px solid #6f42c1; background: #f8f6fc; }
 .trade-resolution { width: min(320px, 100%); flex-shrink: 0; }
 .trade-picker-options { max-height: 18rem; overflow-y: auto; border: 1px solid #dee2e6; border-radius: .5rem; }
-.trade-picker-item { padding: .65rem .8rem .65rem 2.2rem; margin: 0; border-bottom: 1px solid #f0f1f2; }
+.trade-picker-item { display: grid; grid-template-columns: minmax(0, 1fr) 9rem; gap: 1rem; align-items: center; padding: .75rem .9rem; margin: 0; border-bottom: 1px solid #f0f1f2; }
 .trade-picker-item:last-child { border-bottom: 0; }
 .trade-picker-item:hover { background: #f8f6fc; }
 .trade-picker-item small { display: block; }
+.trade-quantity label { display: block; margin-bottom: .2rem; color: #6c757d; font-size: .75rem; }
 .quantity-history-list { display: flex; flex-wrap: wrap; gap: .4rem; }
 #quantity-history-chart { width: 100%; min-height: 240px; }
 @media (max-width: 767px) { .trade-card { align-items: stretch; flex-direction: column; } }

@@ -11,5 +11,8 @@ public class TradeItem
     public Trade Trade { get; set; } = null!;
     public int CollectionItemId { get; set; }
     public CollectionItem CollectionItem { get; set; } = null!;
+    public int Quantity { get; set; }
+    public int? TransferredCollectionItemId { get; set; }
+    public CollectionItem? TransferredCollectionItem { get; set; }
     public string Side { get; set; } = string.Empty;
 }

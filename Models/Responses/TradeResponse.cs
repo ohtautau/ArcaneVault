@@ -20,4 +20,5 @@ public class TradeItemResponse
     public string ItemName { get; set; } = string.Empty;
     public string OriginalOwnerUserName { get; set; } = string.Empty;
     public int CurrentQuantity { get; set; }
+    public int TradeQuantity { get; set; }
 }

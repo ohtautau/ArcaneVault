@@ -24,5 +24,7 @@ public class CollectionItem
 
     public ICollection<TradeItem> TradeItems { get; set; } = [];
 
+    public ICollection<TradeItem> ReceivedTradeItems { get; set; } = [];
+
     public ICollection<CollectionItemQuantityHistory> QuantityHistory { get; set; } = [];
 }

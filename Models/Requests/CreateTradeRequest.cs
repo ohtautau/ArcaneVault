@@ -4,6 +4,8 @@ public class CreateTradeRequest
 {
     [Required, MinLength(1)] public List<int> OfferedCollectionItemIds { get; set; } = [];
     [Required, MinLength(1)] public List<int> RequestedCollectionItemIds { get; set; } = [];
+    public Dictionary<int, int> OfferedQuantities { get; set; } = [];
+    public Dictionary<int, int> RequestedQuantities { get; set; } = [];
     public int? WishlistItemId { get; set; }
     [StringLength(500)] public string? Message { get; set; }
 }

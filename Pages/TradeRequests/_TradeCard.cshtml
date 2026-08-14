@@ -3,7 +3,7 @@
 <article class="trade-card">
     <div class="trade-card-main">
         <span class="trade-status trade-status-@trade.Status.ToLowerInvariant()">@trade.Status</span>
-        <h2 class="h5">@string.Join(", ", trade.OfferedItems.Select(i => i.ItemName)) <span class="text-muted fw-normal">for</span> @string.Join(", ", trade.RequestedItems.Select(i => i.ItemName))</h2>
+        <h2 class="h5">@string.Join(", ", trade.OfferedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}")) <span class="text-muted fw-normal">for</span> @string.Join(", ", trade.RequestedItems.Select(i => $"{i.TradeQuantity} × {i.ItemName}"))</h2>
         <p class="mb-1">@(Model.IsIncoming ? $"Offered by {trade.RequesterUserName}" : $"Sent to {trade.RecipientUserName}")</p>
         @if (!string.IsNullOrWhiteSpace(trade.Message)) { <blockquote class="trade-message">@trade.Message</blockquote> }
         <small class="text-muted">Sent @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small>
