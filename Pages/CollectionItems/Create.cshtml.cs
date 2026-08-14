@@ -18,6 +18,8 @@ public class CreateModel(
     [BindProperty]
     public CreateCollectionItemRequest Input { get; set; } = new();
 
+    [BindProperty] public IFormFile? Photo { get; set; }
+
     public IReadOnlyList<CategoryResponse> Categories { get; private set; } = [];
     public IReadOnlyList<ItemTypeResponse> ItemTypes { get; private set; } = [];
 
@@ -35,6 +37,12 @@ public class CreateModel(
         var result = await collectionItemApiClient.CreateAsync(Input, cancellationToken);
         if (result.IsSuccess && result.Value is not null)
         {
+            if (Photo is not null)
+            {
+                var imageResult = await collectionItemApiClient.UploadImageAsync(result.Value.ItemId, Photo, cancellationToken);
+                if (!imageResult.IsSuccess)
+                    TempData["CollectionWarning"] = imageResult.Problem?.Detail ?? "The item was created, but its photo could not be uploaded.";
+            }
             return RedirectToPage("Details", new { itemId = result.Value.ItemId });
         }
 

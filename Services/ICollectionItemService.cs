@@ -36,6 +36,13 @@ public interface ICollectionItemService
         UpdateCollectionItemRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<CollectionItemResult> SetImageAsync(
+        int itemId,
+        string userName,
+        bool isStaff,
+        IFormFile image,
+        CancellationToken cancellationToken = default);
+
     Task<CollectionItemResult> DeleteAsync(
         int itemId,
         string userName,

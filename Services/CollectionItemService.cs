@@ -8,10 +8,11 @@ using ArcaneVault.Models.Requests;
 using ArcaneVault.Models.Responses;
 using ArcaneVault.Models.Results;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace ArcaneVault.Services;
 
-public class CollectionItemService(ArcaneVaultDbContext dbContext)
+public class CollectionItemService(ArcaneVaultDbContext dbContext, IWebHostEnvironment environment)
     : ICollectionItemService
 {
     public async Task<IReadOnlyList<ItemTypeResponse>> GetItemTypesAsync(string? search, CancellationToken cancellationToken = default)
@@ -46,6 +47,8 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                 EF.Functions.Like(item.ItemName, likePattern, "\\")
                 || EF.Functions.Like(item.UserName, likePattern, "\\")
                 || EF.Functions.Like(item.ItemTypeId, likePattern, "\\")
+                || EF.Functions.Like(item.Condition, likePattern, "\\")
+                || EF.Functions.Like(item.Rarity, likePattern, "\\")
                 || (isNumber && (item.ItemId == number
                     || item.StartingQuantity == number
                     || item.CurrentQuantity == number))
@@ -156,6 +159,8 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
         {
             ItemTypeId = itemType.ItemTypeId,
             ItemName = itemType.ItemName,
+            Condition = request.Condition,
+            Rarity = request.Rarity,
             StartingQuantity = request.StartingQuantity,
             CurrentQuantity = request.StartingQuantity,
             UserName = userName,
@@ -219,6 +224,8 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
         }
         // Item names belong to the permanent item type and cannot be changed per inventory record.
         item.CurrentQuantity = request.CurrentQuantity;
+        item.Condition = request.Condition;
+        item.Rarity = request.Rarity;
         if (quantityChanged)
         {
             item.QuantityHistory.Add(new CollectionItemQuantityHistory
@@ -297,6 +304,61 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
         return new CollectionItemResult(CollectionItemStatus.Success);
     }
 
+    public async Task<CollectionItemResult> SetImageAsync(
+        int itemId, string userName, bool isStaff, IFormFile image,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.CollectionItems.SingleOrDefaultAsync(existing => existing.ItemId == itemId, cancellationToken);
+        if (item is null) return new CollectionItemResult(CollectionItemStatus.NotFound);
+        if (!isStaff && !string.Equals(item.UserName, userName, StringComparison.OrdinalIgnoreCase))
+            return new CollectionItemResult(CollectionItemStatus.Forbidden);
+        if (image.Length is <= 0 or > 5 * 1024 * 1024)
+            return new CollectionItemResult(CollectionItemStatus.InvalidImage);
+
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (extension is not (".jpg" or ".jpeg" or ".png" or ".webp") || !await HasValidImageSignatureAsync(image, extension, cancellationToken))
+            return new CollectionItemResult(CollectionItemStatus.InvalidImage);
+
+        var uploadDirectory = Path.Combine(environment.WebRootPath, "uploads", "collection-items");
+        Directory.CreateDirectory(uploadDirectory);
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var physicalPath = Path.Combine(uploadDirectory, fileName);
+        await using (var stream = new FileStream(physicalPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            await image.CopyToAsync(stream, cancellationToken);
+
+        var oldPath = item.ImagePath;
+        item.ImagePath = $"/uploads/collection-items/{fileName}";
+        try { await dbContext.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException)
+        {
+            File.Delete(physicalPath);
+            return new CollectionItemResult(CollectionItemStatus.Conflict);
+        }
+        DeleteManagedImage(oldPath, uploadDirectory);
+        return await GetByIdAsync(itemId, userName, isStaff, cancellationToken);
+    }
+
+    private static async Task<bool> HasValidImageSignatureAsync(IFormFile image, string extension, CancellationToken cancellationToken)
+    {
+        var header = new byte[12];
+        await using var stream = image.OpenReadStream();
+        var read = await stream.ReadAsync(header.AsMemory(0, header.Length), cancellationToken);
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => read >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
+            ".png" => read >= 8 && header[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+            ".webp" => read >= 12 && Encoding.ASCII.GetString(header, 0, 4) == "RIFF" && Encoding.ASCII.GetString(header, 8, 4) == "WEBP",
+            _ => false
+        };
+    }
+
+    private static void DeleteManagedImage(string? imagePath, string uploadDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath)) return;
+        var candidate = Path.GetFullPath(Path.Combine(uploadDirectory, Path.GetFileName(imagePath)));
+        if (Path.GetDirectoryName(candidate) == Path.GetFullPath(uploadDirectory) && File.Exists(candidate)) File.Delete(candidate);
+    }
+
     private async Task<List<string>> GetInvalidCategoryCodesAsync(
         IReadOnlyList<string> categoryCodes,
         CancellationToken cancellationToken)
@@ -323,6 +385,9 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
             ItemId = item.ItemId,
             ItemTypeId = item.ItemTypeId,
             ItemName = item.ItemName,
+            Condition = item.Condition,
+            Rarity = item.Rarity,
+            ImagePath = item.ImagePath,
             StartingQuantity = item.StartingQuantity,
             CurrentQuantity = item.CurrentQuantity,
             LockedQuantity = item.LockedQuantity,

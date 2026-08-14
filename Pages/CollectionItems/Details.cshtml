@@ -11,6 +11,8 @@ Tutorial Group:
 }
 
 <h1>Collection Item Details</h1>
+@if (TempData["CollectionWarning"] is string warning) { <div class="alert alert-warning">@warning</div> }
+@if (!string.IsNullOrWhiteSpace(Model.Item.ImagePath)) { <img src="@Model.Item.ImagePath" alt="Photo of @Model.Item.ItemName" class="img-thumbnail mt-3" style="max-width:360px;max-height:360px;object-fit:contain" /> }
 
 <dl class="row mt-4">
     <dt class="col-sm-3">Inventory Record ID</dt>
@@ -24,6 +26,9 @@ Tutorial Group:
 
     <dt class="col-sm-3">Owner</dt>
     <dd class="col-sm-9">@Model.Item.UserName</dd>
+
+    <dt class="col-sm-3">Condition</dt><dd class="col-sm-9">@Model.Item.Condition</dd>
+    <dt class="col-sm-3">Rarity</dt><dd class="col-sm-9">@Model.Item.Rarity</dd>
 
     <dt class="col-sm-3">Starting Quantity</dt>
     <dd class="col-sm-9">@Model.Item.StartingQuantity</dd>

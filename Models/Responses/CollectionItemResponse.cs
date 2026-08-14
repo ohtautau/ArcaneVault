@@ -12,6 +12,12 @@ public class CollectionItemResponse
 
     public string ItemName { get; set; } = string.Empty;
 
+    public string Condition { get; set; } = string.Empty;
+
+    public string Rarity { get; set; } = string.Empty;
+
+    public string? ImagePath { get; set; }
+
     public int StartingQuantity { get; set; }
 
     public int CurrentQuantity { get; set; }

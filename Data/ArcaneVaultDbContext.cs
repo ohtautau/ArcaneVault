@@ -118,6 +118,9 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
         entity.Property(item => item.ItemName)
             .HasMaxLength(150)
             .IsRequired();
+        entity.Property(item => item.Condition).HasMaxLength(10).HasDefaultValue("Good").IsRequired();
+        entity.Property(item => item.Rarity).HasMaxLength(20).HasDefaultValue("Common").IsRequired();
+        entity.Property(item => item.ImagePath).HasMaxLength(300);
         entity.Property(item => item.IsDeleted)
             .HasDefaultValue(false);
         entity.Property(item => item.CreatedAtUtc)
@@ -145,6 +148,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             tableBuilder.HasCheckConstraint(
                 "CK_CollectionItems_LockedQuantity_Valid",
                 "LockedQuantity >= 0 AND LockedQuantity <= CurrentQuantity");
+            tableBuilder.HasCheckConstraint("CK_CollectionItems_Condition_Valid", "Condition IN ('Mint', 'Good', 'Fair', 'Poor')");
+            tableBuilder.HasCheckConstraint("CK_CollectionItems_Rarity_Valid", "Rarity IN ('Common', 'Rare', 'Ultra Rare')");
         });
     }
 

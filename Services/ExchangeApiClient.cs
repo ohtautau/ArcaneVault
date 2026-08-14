@@ -34,14 +34,39 @@ public class ExchangeApiClient(IHttpClientFactory httpClientFactory, IHttpContex
         var context = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active request.");
         if (context.Request.Cookies.TryGetValue(CookieName, out var cookie)) request.Headers.TryAddWithoutValidation("Cookie", $"{CookieName}={cookie}");
         using var client = httpClientFactory.CreateClient(); client.BaseAddress = new Uri($"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/");
-        using var response = await client.SendAsync(request, ct);
-        if (response.IsSuccessStatusCode)
+        try
         {
-            if (response.Content.Headers.ContentLength == 0) return new(response.StatusCode);
-            return new(response.StatusCode, await response.Content.ReadFromJsonAsync<T>(ct));
+            using var response = await client.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                if (response.Content.Headers.ContentLength == 0) return new(response.StatusCode);
+                return new(response.StatusCode, await response.Content.ReadFromJsonAsync<T>(ct));
+            }
+            ProblemDetails? problem = null;
+            try { problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(ct); } catch (Exception exception) when (exception is NotSupportedException or System.Text.Json.JsonException) { }
+            return new(response.StatusCode, Problem: problem);
         }
-        ProblemDetails? problem = null;
-        try { problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(ct); } catch (Exception exception) when (exception is NotSupportedException or System.Text.Json.JsonException) { }
-        return new(response.StatusCode, Problem: problem);
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return new(
+                System.Net.HttpStatusCode.RequestTimeout,
+                Problem: new ProblemDetails
+                {
+                    Status = StatusCodes.Status408RequestTimeout,
+                    Title = "The request was cancelled.",
+                    Detail = "The page request ended before the trade operation completed. Please try again."
+                });
+        }
+        catch (TaskCanceledException)
+        {
+            return new(
+                System.Net.HttpStatusCode.GatewayTimeout,
+                Problem: new ProblemDetails
+                {
+                    Status = StatusCodes.Status504GatewayTimeout,
+                    Title = "The internal API request timed out.",
+                    Detail = "The trade service did not respond in time. Please try again."
+                });
+        }
     }
 }

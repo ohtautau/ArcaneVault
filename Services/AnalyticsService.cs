@@ -199,12 +199,13 @@ public class AnalyticsService(ArcaneVaultDbContext dbContext) : IAnalyticsServic
             .OrderBy(item => item.UserName).ThenBy(item => item.ItemName)
             .ToListAsync(cancellationToken);
         var csv = new StringBuilder();
-        csv.AppendLine("Item Type ID,Inventory Record ID,Item Name,Owner,Starting Quantity,Current Quantity,Locked Quantity,Available Quantity,Categories,Created UTC");
+        csv.AppendLine("Item Type ID,Inventory Record ID,Item Name,Owner,Condition,Rarity,Image Path,Starting Quantity,Current Quantity,Locked Quantity,Available Quantity,Categories,Created UTC");
         foreach (var row in rows)
         {
             csv.AppendLine(string.Join(",", new[]
             {
                 Csv(row.ItemTypeId), row.ItemId.ToString(), Csv(row.ItemName), Csv(row.UserName),
+                Csv(row.Condition), Csv(row.Rarity), Csv(row.ImagePath ?? string.Empty),
                 row.StartingQuantity.ToString(), row.CurrentQuantity.ToString(), row.LockedQuantity.ToString(),
                 (row.CurrentQuantity - row.LockedQuantity).ToString(),
                 Csv(string.Join(" | ", row.CollectionItemCategories.OrderBy(link => link.CategoryCode).Select(link => link.Category.CategoryName))),

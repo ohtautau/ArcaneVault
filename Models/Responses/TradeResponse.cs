@@ -23,6 +23,9 @@ public class TradeItemResponse
     public string ItemTypeId { get; set; } = string.Empty;
     public int? ReceivedCollectionItemId { get; set; }
     public string ItemName { get; set; } = string.Empty;
+    public string Condition { get; set; } = "Good";
+    public string Rarity { get; set; } = "Common";
+    public string? ImagePath { get; set; }
     public string OriginalOwnerUserName { get; set; } = string.Empty;
     public int CurrentQuantity { get; set; }
     public int TradeQuantity { get; set; }

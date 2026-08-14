@@ -69,9 +69,11 @@ else
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
+                    <th>Photo</th>
                     <th>Item Type ID</th>
                     <th>Inventory ID</th>
                     <th>Name</th>
+                    <th>Condition</th><th>Rarity</th>
                     @if (User.IsInRole("Staff"))
                     {
                         <th>Owner</th>
@@ -89,9 +91,11 @@ else
                 @foreach (var item in Model.Items)
                 {
                     <tr>
+                        <td>@if (!string.IsNullOrWhiteSpace(item.ImagePath)) { <img src="@item.ImagePath" alt="Photo of @item.ItemName" class="rounded border" width="56" height="56" style="object-fit:cover" /> } else { <span class="text-muted">—</span> }</td>
                         <td><strong>@item.ItemTypeId</strong></td>
                         <td>@item.ItemId</td>
                         <td>@item.ItemName</td>
+                        <td>@item.Condition</td><td><span class="badge @(item.Rarity == "Ultra Rare" ? "text-bg-warning" : item.Rarity == "Rare" ? "text-bg-info" : "text-bg-secondary")">@item.Rarity</span></td>
                         @if (User.IsInRole("Staff"))
                         {
                             <td>@item.UserName</td>

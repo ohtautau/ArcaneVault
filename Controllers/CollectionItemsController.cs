@@ -122,6 +122,19 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
             : MapWriteFailure(result, itemId);
     }
 
+    [HttpPost("{itemId:int}/image")]
+    // Allow multipart framing overhead; the service still enforces a 5 MB file limit.
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<ActionResult<CollectionItemResponse>> UploadImage(
+        int itemId, [FromForm] IFormFile image, CancellationToken cancellationToken)
+    {
+        var result = await collectionItemService.SetImageAsync(
+            itemId, CurrentUserName, User.IsInRole("Staff"), image, cancellationToken);
+        return result.Status == CollectionItemStatus.Success && result.Response is not null
+            ? Ok(result.Response)
+            : MapWriteFailure(result, itemId);
+    }
+
     [HttpDelete("{itemId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,6 +192,10 @@ public class CollectionItemsController(ICollectionItemService collectionItemServ
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Invalid item type.",
                 detail: "Select an existing item type, or mark this as a new item type with a unique ID."),
+            CollectionItemStatus.InvalidImage => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid image.",
+                detail: "Upload a valid JPG, PNG, or WebP image no larger than 5 MB."),
             _ => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Collection item conflict.",

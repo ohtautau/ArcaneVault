@@ -18,10 +18,13 @@ public class EditModel(
     [BindProperty]
     public UpdateCollectionItemRequest Input { get; set; } = new();
 
+    [BindProperty] public IFormFile? Photo { get; set; }
+
     public int ItemId { get; private set; }
 
     public int StartingQuantity { get; private set; }
     public string ItemTypeId { get; private set; } = string.Empty;
+    public string? CurrentImagePath { get; private set; }
 
     public IReadOnlyList<CategoryResponse> Categories { get; private set; } = [];
 
@@ -42,7 +45,10 @@ public class EditModel(
         ItemId = itemResult.Value.ItemId;
         StartingQuantity = itemResult.Value.StartingQuantity;
         ItemTypeId = itemResult.Value.ItemTypeId;
+        CurrentImagePath = itemResult.Value.ImagePath;
         Input.ItemName = itemResult.Value.ItemName;
+        Input.Condition = itemResult.Value.Condition;
+        Input.Rarity = itemResult.Value.Rarity;
         Input.CurrentQuantity = itemResult.Value.CurrentQuantity;
         Input.CategoryCodes = itemResult.Value.Categories
             .Select(category => category.CategoryCode)
@@ -68,6 +74,16 @@ public class EditModel(
             cancellationToken);
         if (result.IsSuccess && result.Value is not null)
         {
+            if (Photo is not null)
+            {
+                var imageResult = await collectionItemApiClient.UploadImageAsync(itemId, Photo, cancellationToken);
+                if (!imageResult.IsSuccess)
+                {
+                    ModelState.AddModelError(nameof(Photo), imageResult.Problem?.Detail ?? "The photo could not be uploaded.");
+                    await LoadSupportingDataAsync(itemId, cancellationToken);
+                    return Page();
+                }
+            }
             return RedirectToPage("Details", new { itemId = result.Value.ItemId });
         }
 
@@ -93,6 +109,7 @@ public class EditModel(
         {
             StartingQuantity = itemResult.Value.StartingQuantity;
             ItemTypeId = itemResult.Value.ItemTypeId;
+            CurrentImagePath = itemResult.Value.ImagePath;
         }
 
         await LoadCategoriesAsync(cancellationToken);
