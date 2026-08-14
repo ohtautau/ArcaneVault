@@ -10,7 +10,7 @@ namespace ArcaneVault.Services;
 
 public interface IExchangeApiClient
 {
-    Task<ApiResult<IReadOnlyList<WishlistItemResponse>>> GetWishlistAsync(string? userName, bool othersOnly, CancellationToken cancellationToken = default);
+    Task<ApiResult<IReadOnlyList<WishlistItemResponse>>> GetWishlistAsync(string? search, bool othersOnly, CancellationToken cancellationToken = default);
     Task<ApiResult<WishlistItemResponse>> GetWishlistItemAsync(int id, CancellationToken cancellationToken = default);
     Task<ApiResult<WishlistItemResponse>> CreateWishlistItemAsync(CreateWishlistItemRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<WishlistItemResponse>> UpdateWishlistItemAsync(int id, UpdateWishlistItemRequest request, CancellationToken cancellationToken = default);

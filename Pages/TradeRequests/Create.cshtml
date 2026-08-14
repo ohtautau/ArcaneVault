@@ -2,15 +2,31 @@
 @model ArcaneVault.Pages.TradeRequests.CreateModel
 @{ ViewData["Title"] = "Propose Trade"; }
 <h1>Propose a Trade</h1>
-<div class="trade-summary mb-4"><span class="wishlist-owner">Wishlist signal from @Model.WishlistItem.UserName</span><h2>@Model.WishlistItem.ItemName</h2><p>Select the real items you offer and the real items you want in return.</p></div>
+<div class="trade-summary mb-4"><span class="wishlist-owner">@Model.WishlistItem.UserName's Wishlist</span><h2>@Model.WishlistItem.ItemName</h2><p>Search the two inventories and select one or more items on each side. The recipient can only accept or reject this fixed proposal.</p></div>
 @if (Model.OfferedItems.Count == 0 || Model.RequestedItems.Count == 0) { <div class="alert alert-warning">Both users need collection items before a trade can be proposed.</div> }
 else {
 <form method="post" class="col-lg-7">
     <input asp-for="Input.WishlistItemId" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <fieldset class="mb-3"><legend class="h6">I offer (X)</legend>@foreach (var item in Model.OfferedItems) { <label class="form-check"><input class="form-check-input" type="checkbox" name="Input.OfferedCollectionItemIds" value="@item.ItemId" /> <span class="form-check-label">@item.ItemName</span></label> }</fieldset>
-    <fieldset class="mb-3"><legend class="h6">I request from @Model.WishlistItem.UserName (Y)</legend>@foreach (var item in Model.RequestedItems) { <label class="form-check"><input class="form-check-input" type="checkbox" name="Input.RequestedCollectionItemIds" value="@item.ItemId" /> <span class="form-check-label">@item.ItemName</span></label> }</fieldset>
+    <fieldset class="mb-4 trade-picker" data-picker><legend class="h6">I offer (X) — <span data-count>0</span> selected</legend><input type="search" class="form-control mb-2" data-inventory-search placeholder="Search my inventory by item name, category, ID, or quantity" />
+        <div class="trade-picker-options">@foreach (var item in Model.OfferedItems) { <label class="form-check trade-picker-item" data-search="@($"{item.ItemName} {item.ItemId} {item.CurrentQuantity} {string.Join(" ", item.Categories.Select(c => $"{c.CategoryCode} {c.CategoryName}"))}")"><input class="form-check-input" type="checkbox" name="Input.OfferedCollectionItemIds" value="@item.ItemId" checked="@Model.Input.OfferedCollectionItemIds.Contains(item.ItemId)" /> <span class="form-check-label"><strong>@item.ItemName</strong> <small class="text-muted">#@item.ItemId · Qty @item.CurrentQuantity · @string.Join(", ", item.Categories.Select(c => c.CategoryName))</small></span></label> }</div><p class="small text-muted mt-2 mb-0" data-no-match hidden>No inventory items match this keyword.</p></fieldset>
+    <fieldset class="mb-4 trade-picker" data-picker><legend class="h6">I request from @Model.WishlistItem.UserName (Y) — <span data-count>0</span> selected</legend><input type="search" class="form-control mb-2" data-inventory-search placeholder="Search their inventory by item name, category, ID, or quantity" />
+        <div class="trade-picker-options">@foreach (var item in Model.RequestedItems) { <label class="form-check trade-picker-item" data-search="@($"{item.ItemName} {item.ItemId} {item.CurrentQuantity} {string.Join(" ", item.Categories.Select(c => $"{c.CategoryCode} {c.CategoryName}"))}")"><input class="form-check-input" type="checkbox" name="Input.RequestedCollectionItemIds" value="@item.ItemId" checked="@Model.Input.RequestedCollectionItemIds.Contains(item.ItemId)" /> <span class="form-check-label"><strong>@item.ItemName</strong> <small class="text-muted">#@item.ItemId · Qty @item.CurrentQuantity · @string.Join(", ", item.Categories.Select(c => c.CategoryName))</small></span></label> }</div><p class="small text-muted mt-2 mb-0" data-no-match hidden>No inventory items match this keyword.</p></fieldset>
     <div class="mb-3"><label asp-for="Input.Message" class="form-label"></label><textarea asp-for="Input.Message" class="form-control" rows="4" placeholder="Explain the proposed exchange or condition."></textarea><span asp-validation-for="Input.Message" class="text-danger"></span></div>
     <button class="btn btn-primary">Send trade request</button> <a asp-page="/Wishlist/Browse" class="btn btn-outline-secondary">Cancel</a>
 </form> }
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script>
+document.querySelectorAll('[data-picker]').forEach(picker => {
+    const search = picker.querySelector('[data-inventory-search]');
+    const items = [...picker.querySelectorAll('.trade-picker-item')];
+    const count = picker.querySelector('[data-count]');
+    const noMatch = picker.querySelector('[data-no-match]');
+    const refreshCount = () => count.textContent = items.filter(x => x.querySelector('input').checked).length;
+    search.addEventListener('input', () => {
+        const term = search.value.trim().toLowerCase(); let visible = 0;
+        items.forEach(item => { const show = item.dataset.search.toLowerCase().includes(term); item.hidden = !show; if (show) visible++; });
+        noMatch.hidden = visible !== 0;
+    });
+    items.forEach(item => item.querySelector('input').addEventListener('change', refreshCount)); refreshCount();
+});
+</script> }

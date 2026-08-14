@@ -17,4 +17,12 @@ public class CollectionItemResponse
     public string UserName { get; set; } = string.Empty;
 
     public IReadOnlyList<CollectionItemCategoryResponse> Categories { get; set; } = [];
+
+    public IReadOnlyList<QuantityHistoryPointResponse> QuantityHistory { get; set; } = [];
+}
+
+public class QuantityHistoryPointResponse
+{
+    public int Quantity { get; set; }
+    public DateTime ChangedAtUtc { get; set; }
 }

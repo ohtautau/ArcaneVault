@@ -23,4 +23,6 @@ public class CollectionItem
     public ICollection<CollectionItemCategory> CollectionItemCategories { get; set; } = [];
 
     public ICollection<TradeItem> TradeItems { get; set; } = [];
+
+    public ICollection<CollectionItemQuantityHistory> QuantityHistory { get; set; } = [];
 }

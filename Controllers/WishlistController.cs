@@ -15,8 +15,8 @@ namespace ArcaneVault.Controllers;
 public class WishlistController(IWishlistService wishlistService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<WishlistItemResponse>>> GetAll([FromQuery] string? userName, [FromQuery] bool othersOnly, CancellationToken cancellationToken) =>
-        Ok(await wishlistService.GetAllAsync(userName, othersOnly ? CurrentUserName : null, cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<WishlistItemResponse>>> GetAll([FromQuery] string? search, [FromQuery] bool othersOnly, CancellationToken cancellationToken) =>
+        Ok(await wishlistService.GetAllAsync(search, othersOnly ? CurrentUserName : null, cancellationToken));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<WishlistItemResponse>> GetById(int id, CancellationToken cancellationToken) =>

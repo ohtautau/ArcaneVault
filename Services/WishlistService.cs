@@ -13,10 +13,20 @@ namespace ArcaneVault.Services;
 
 public class WishlistService(ArcaneVaultDbContext dbContext) : IWishlistService
 {
-    public async Task<IReadOnlyList<WishlistItemResponse>> GetAllAsync(string? userName, string? excludeUserName, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WishlistItemResponse>> GetAllAsync(string? search, string? excludeUserName, CancellationToken cancellationToken = default)
     {
         var query = dbContext.WishlistItems.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(userName)) query = query.Where(item => item.UserName == userName.Trim());
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            var pattern = $"%{EscapeLikePattern(term)}%";
+            var isQuantity = int.TryParse(term, out var quantity);
+            query = query.Where(item =>
+                EF.Functions.Like(item.UserName, pattern, "\\") ||
+                EF.Functions.Like(item.ItemName, pattern, "\\") ||
+                (item.Notes != null && EF.Functions.Like(item.Notes, pattern, "\\")) ||
+                (isQuantity && item.DesiredQuantity == quantity));
+        }
         if (!string.IsNullOrWhiteSpace(excludeUserName)) query = query.Where(item => item.UserName != excludeUserName);
         return await Project(query).OrderBy(item => item.UserName).ThenByDescending(item => item.CreatedAtUtc).ToListAsync(cancellationToken);
     }
@@ -65,4 +75,8 @@ public class WishlistService(ArcaneVaultDbContext dbContext) : IWishlistService
         UserName = item.UserName, CreatedAtUtc = item.CreatedAtUtc, PendingTradeCount = item.Trades.Count(request => request.Status == "Pending")
     });
     private static string? NormalizeNotes(string? notes) => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+    private static string EscapeLikePattern(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("%", "\\%", StringComparison.Ordinal)
+        .Replace("_", "\\_", StringComparison.Ordinal);
 }

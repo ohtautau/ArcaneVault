@@ -20,6 +20,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
 
     public DbSet<CollectionItemCategory> CollectionItemCategories => Set<CollectionItemCategory>();
 
+    public DbSet<CollectionItemQuantityHistory> CollectionItemQuantityHistory => Set<CollectionItemQuantityHistory>();
+
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
 
     public DbSet<Trade> Trades => Set<Trade>();
@@ -35,6 +37,7 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
         ConfigureCategories(modelBuilder);
         ConfigureCollectionItems(modelBuilder);
         ConfigureCollectionItemCategories(modelBuilder);
+        ConfigureCollectionItemQuantityHistory(modelBuilder);
         ConfigureWishlistItems(modelBuilder);
         ConfigureTrades(modelBuilder);
         ConfigureTradeItems(modelBuilder);
@@ -181,6 +184,20 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             .HasForeignKey(trade => trade.WishlistItemId).OnDelete(DeleteBehavior.SetNull);
         entity.HasIndex(trade => new { trade.RecipientUserName, trade.Status });
         entity.HasIndex(trade => new { trade.RequesterUserName, trade.Status });
+    }
+
+    private static void ConfigureCollectionItemQuantityHistory(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<CollectionItemQuantityHistory>();
+        entity.ToTable("CollectionItemQuantityHistory");
+        entity.HasKey(history => history.HistoryId);
+        entity.HasOne(history => history.CollectionItem)
+            .WithMany(item => item.QuantityHistory)
+            .HasForeignKey(history => history.ItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        entity.HasIndex(history => new { history.ItemId, history.ChangedAtUtc });
+        entity.ToTable(table => table.HasCheckConstraint(
+            "CK_CollectionItemQuantityHistory_Quantity_NonNegative", "Quantity >= 0"));
     }
 
     private static void ConfigureTradeItems(ModelBuilder modelBuilder)

@@ -101,6 +101,11 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                 .ToList()
         };
         dbContext.CollectionItems.Add(item);
+        item.QuantityHistory.Add(new CollectionItemQuantityHistory
+        {
+            Quantity = item.CurrentQuantity,
+            ChangedAtUtc = DateTime.UtcNow
+        });
 
         try
         {
@@ -144,8 +149,18 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                 InvalidCategoryCodes: invalidCodes);
         }
 
+        var quantityChanged = item.CurrentQuantity != request.CurrentQuantity;
         item.ItemName = request.ItemName.Trim();
         item.CurrentQuantity = request.CurrentQuantity;
+        if (quantityChanged)
+        {
+            item.QuantityHistory.Add(new CollectionItemQuantityHistory
+            {
+                ItemId = itemId,
+                Quantity = request.CurrentQuantity,
+                ChangedAtUtc = DateTime.UtcNow
+            });
+        }
 
         var requestedCodes = categoryCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var removedLinks = item.CollectionItemCategories
@@ -244,6 +259,16 @@ public class CollectionItemService(ArcaneVaultDbContext dbContext)
                 {
                     CategoryCode = link.CategoryCode,
                     CategoryName = link.Category.CategoryName
+                })
+                .ToList(),
+            QuantityHistory = item.QuantityHistory
+                .OrderByDescending(history => history.ChangedAtUtc)
+                .Take(30)
+                .OrderBy(history => history.ChangedAtUtc)
+                .Select(history => new QuantityHistoryPointResponse
+                {
+                    Quantity = history.Quantity,
+                    ChangedAtUtc = history.ChangedAtUtc
                 })
                 .ToList()
         });

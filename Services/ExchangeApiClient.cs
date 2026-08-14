@@ -13,7 +13,7 @@ namespace ArcaneVault.Services;
 public class ExchangeApiClient(IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor) : IExchangeApiClient
 {
     private const string CookieName = ".ArcaneVault.Auth";
-    public Task<ApiResult<IReadOnlyList<WishlistItemResponse>>> GetWishlistAsync(string? userName, bool othersOnly, CancellationToken ct = default) => SendAsync<IReadOnlyList<WishlistItemResponse>>(HttpMethod.Get, $"api/wishlist?userName={Uri.EscapeDataString(userName ?? "")}&othersOnly={othersOnly}", null, ct);
+    public Task<ApiResult<IReadOnlyList<WishlistItemResponse>>> GetWishlistAsync(string? search, bool othersOnly, CancellationToken ct = default) => SendAsync<IReadOnlyList<WishlistItemResponse>>(HttpMethod.Get, $"api/wishlist?search={Uri.EscapeDataString(search ?? "")}&othersOnly={othersOnly}", null, ct);
     public Task<ApiResult<WishlistItemResponse>> GetWishlistItemAsync(int id, CancellationToken ct = default) => SendAsync<WishlistItemResponse>(HttpMethod.Get, $"api/wishlist/{id}", null, ct);
     public Task<ApiResult<WishlistItemResponse>> CreateWishlistItemAsync(CreateWishlistItemRequest request, CancellationToken ct = default) => SendAsync<WishlistItemResponse>(HttpMethod.Post, "api/wishlist", JsonContent.Create(request), ct);
     public Task<ApiResult<WishlistItemResponse>> UpdateWishlistItemAsync(int id, UpdateWishlistItemRequest request, CancellationToken ct = default) => SendAsync<WishlistItemResponse>(HttpMethod.Put, $"api/wishlist/{id}", JsonContent.Create(request), ct);
