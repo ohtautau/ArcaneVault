@@ -21,4 +21,6 @@ public class CollectionItem
     public ArcaneVaultUser User { get; set; } = null!;
 
     public ICollection<CollectionItemCategory> CollectionItemCategories { get; set; } = [];
+
+    public ICollection<TradeRequest> OfferedTradeRequests { get; set; } = [];
 }

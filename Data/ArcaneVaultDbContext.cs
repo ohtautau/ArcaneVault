@@ -20,6 +20,10 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
 
     public DbSet<CollectionItemCategory> CollectionItemCategories => Set<CollectionItemCategory>();
 
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+
+    public DbSet<TradeRequest> TradeRequests => Set<TradeRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -29,6 +33,8 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
         ConfigureCategories(modelBuilder);
         ConfigureCollectionItems(modelBuilder);
         ConfigureCollectionItemCategories(modelBuilder);
+        ConfigureWishlistItems(modelBuilder);
+        ConfigureTradeRequests(modelBuilder);
     }
 
     private static void ConfigureUserRoles(ModelBuilder modelBuilder)
@@ -140,5 +146,38 @@ public class ArcaneVaultDbContext(DbContextOptions<ArcaneVaultDbContext> options
             .HasForeignKey(link => link.CategoryCode)
             .OnDelete(DeleteBehavior.Restrict);
         entity.HasQueryFilter(link => !link.CollectionItem.IsDeleted);
+    }
+
+    private static void ConfigureWishlistItems(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<WishlistItem>();
+        entity.ToTable("WishlistItems");
+        entity.HasKey(item => item.WishlistItemId);
+        entity.Property(item => item.ItemName).HasMaxLength(150).IsRequired();
+        entity.Property(item => item.Notes).HasMaxLength(500);
+        entity.Property(item => item.UserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
+        entity.HasOne(item => item.User).WithMany(user => user.WishlistItems)
+            .HasForeignKey(item => item.UserName).OnDelete(DeleteBehavior.Cascade);
+        entity.HasQueryFilter(item => !item.User.IsDeleted);
+        entity.ToTable(table => table.HasCheckConstraint(
+            "CK_WishlistItems_DesiredQuantity_Positive", "DesiredQuantity > 0"));
+    }
+
+    private static void ConfigureTradeRequests(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<TradeRequest>();
+        entity.ToTable("TradeRequests");
+        entity.HasKey(request => request.TradeRequestId);
+        entity.Property(request => request.RequesterUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
+        entity.Property(request => request.OwnerUserName).HasMaxLength(50).UseCollation("NOCASE").IsRequired();
+        entity.Property(request => request.Message).HasMaxLength(500);
+        entity.Property(request => request.Status).HasMaxLength(20).IsRequired();
+        entity.HasOne(request => request.WishlistItem).WithMany(item => item.TradeRequests)
+            .HasForeignKey(request => request.WishlistItemId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne(request => request.OfferedCollectionItem).WithMany(item => item.OfferedTradeRequests)
+            .HasForeignKey(request => request.OfferedCollectionItemId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasIndex(request => new { request.OwnerUserName, request.Status });
+        entity.HasIndex(request => new { request.RequesterUserName, request.Status });
+        entity.HasQueryFilter(request => !request.OfferedCollectionItem.IsDeleted);
     }
 }

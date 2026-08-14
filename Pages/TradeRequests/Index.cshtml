@@ -1,0 +1,10 @@
+@page
+@model ArcaneVault.Pages.TradeRequests.IndexModel
+@{ ViewData["Title"] = "Trade Requests"; }
+<div class="d-flex justify-content-between align-items-start mb-4"><div><h1>Trade Requests</h1><p class="text-muted">Review offers for your wishlist and track proposals you sent.</p></div><a asp-page="/Wishlist/Browse" class="btn btn-primary">Find a trade</a></div>
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<ul class="nav nav-tabs mb-3" role="tablist"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#incoming">Incoming (@Model.Incoming.Count)</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#outgoing">Sent (@Model.Outgoing.Count)</button></li></ul>
+<div class="tab-content">
+<div class="tab-pane fade show active" id="incoming">@if (Model.Incoming.Count == 0) { <div class="alert alert-info">No incoming trade requests.</div> } else { @foreach (var trade in Model.Incoming) { <partial name="_TradeCard" model="@(new ArcaneVault.Pages.TradeRequests.TradeCardModel(trade, true))" /> } }</div>
+<div class="tab-pane fade" id="outgoing">@if (Model.Outgoing.Count == 0) { <div class="alert alert-info">No sent trade requests.</div> } else { @foreach (var trade in Model.Outgoing) { <partial name="_TradeCard" model="@(new ArcaneVault.Pages.TradeRequests.TradeCardModel(trade, false))" /> } }</div>
+</div>

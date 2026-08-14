@@ -29,3 +29,18 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.wishlist-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+.wishlist-card, .trade-summary, .trade-card { background: #fff; border: 1px solid #dee2e6; border-radius: .75rem; padding: 1.25rem; box-shadow: 0 .2rem .6rem rgba(25, 35, 45, .06); }
+.wishlist-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 205px; }
+.wishlist-card h2, .trade-summary h2 { font-size: 1.2rem; margin: .35rem 0 .65rem; }
+.wishlist-owner { color: #6f42c1; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.trade-card { display: flex; justify-content: space-between; gap: 1.5rem; align-items: center; margin-bottom: 1rem; }
+.trade-card-main { min-width: 0; }
+.trade-actions { display: flex; gap: .5rem; flex-shrink: 0; }
+.trade-status { display: inline-block; border-radius: 999px; padding: .2rem .55rem; margin-bottom: .5rem; background: #e9ecef; font-size: .75rem; font-weight: 700; }
+.trade-status-pending { background: #fff3cd; color: #795c00; }
+.trade-status-accepted { background: #d1e7dd; color: #0f5132; }
+.trade-status-declined, .trade-status-cancelled { background: #f8d7da; color: #842029; }
+.trade-message { margin: .75rem 0; padding: .6rem .85rem; border-left: 3px solid #6f42c1; background: #f8f6fc; }
+@media (max-width: 767px) { .trade-card { align-items: stretch; flex-direction: column; } }

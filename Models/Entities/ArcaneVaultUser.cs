@@ -19,4 +19,6 @@ public class ArcaneVaultUser
     public ArcaneVaultUserRole Role { get; set; } = null!;
 
     public ICollection<CollectionItem> CollectionItems { get; set; } = [];
+
+    public ICollection<WishlistItem> WishlistItems { get; set; } = [];
 }

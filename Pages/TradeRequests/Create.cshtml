@@ -1,0 +1,15 @@
+@page
+@model ArcaneVault.Pages.TradeRequests.CreateModel
+@{ ViewData["Title"] = "Propose Trade"; }
+<h1>Propose a Trade</h1>
+<div class="trade-summary mb-4"><span class="wishlist-owner">Wanted by @Model.WishlistItem.UserName</span><h2>@Model.WishlistItem.ItemName</h2><p>@(Model.WishlistItem.Notes ?? "No additional preferences.")</p></div>
+@if (Model.CollectionItems.Count == 0) { <div class="alert alert-warning">Add a collection item before proposing a trade. <a asp-page="/CollectionItems/Create">Add an item</a>.</div> }
+else {
+<form method="post" class="col-lg-7">
+    <input asp-for="Input.WishlistItemId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="Input.OfferedCollectionItemId" class="form-label"></label><select asp-for="Input.OfferedCollectionItemId" class="form-select"><option value="">Select one of your items</option>@foreach (var item in Model.CollectionItems) { <option value="@item.ItemId">@item.ItemName (@item.CurrentQuantity available)</option> }</select><span asp-validation-for="Input.OfferedCollectionItemId" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Input.Message" class="form-label"></label><textarea asp-for="Input.Message" class="form-control" rows="4" placeholder="Explain the proposed exchange or condition."></textarea><span asp-validation-for="Input.Message" class="text-danger"></span></div>
+    <button class="btn btn-primary">Send trade request</button> <a asp-page="/Wishlist/Browse" class="btn btn-outline-secondary">Cancel</a>
+</form> }
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -39,6 +39,12 @@ Tutorial Group:
                                     @(User.IsInRole("Staff") ? "Collection Items" : "My Collection")
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Wishlist/Index">Wishlist</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/TradeRequests/Index">Trades</a>
+                            </li>
                         }
                         @if (User.IsInRole("Staff"))
                         {
