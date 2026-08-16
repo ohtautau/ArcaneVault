@@ -57,6 +57,12 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
         }
         var trade = new Trade { RequesterUserName = user, RecipientUserName = recipientName, WishlistItemId = request.WishlistItemId, Message = Clean(request.Message),
             TradeItems = offeredIds.Select(id => new TradeItem { CollectionItemId = id, Quantity = quantities[id], Side = "Offered" }).Concat(requestedIds.Select(id => new TradeItem { CollectionItemId = id, Quantity = quantities[id], Side = "Requested" })).ToList() };
+        foreach (var item in requested)
+        {
+            item.LockedQuantity += quantities[item.ItemId];
+            item.IsInTrade = true;
+        }
+        trade.RequestedItemsLocked = true;
         db.Trades.Add(trade);
         try { await db.SaveChangesAsync(ct); } catch (DbUpdateException) { return new(TradeStatus.Conflict); }
         return await GetByIdAsync(trade.TradeId, user, false, ct);
@@ -74,11 +80,18 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
             if ((status is "Accepted" or "Rejected") && !recipient || status == "Cancelled" && !requester) return new(TradeStatus.Forbidden);
             if (status == "Accepted")
             {
-                if (!OriginalOwners(t) || t.TradeItems.Any(item => item.CollectionItem.CurrentQuantity - item.CollectionItem.LockedQuantity < item.Quantity))
+                if (!OriginalOwners(t)
+                    || t.TradeItems.Where(item => item.Side == "Offered")
+                        .Any(item => item.CollectionItem.CurrentQuantity - item.CollectionItem.LockedQuantity < item.Quantity)
+                    || t.TradeItems.Where(item => item.Side == "Requested").Any(item =>
+                        t.RequestedItemsLocked
+                            ? item.CollectionItem.CurrentQuantity < item.Quantity || item.CollectionItem.LockedQuantity < item.Quantity
+                            : item.CollectionItem.CurrentQuantity - item.CollectionItem.LockedQuantity < item.Quantity))
                 return new(TradeStatus.Conflict, Detail: "An item owner or available quantity changed before acceptance.");
-                LockItems(t); t.Status = "Trading";
+                if (!t.RequestedItemsLocked) { LockItems(t, "Requested"); t.RequestedItemsLocked = true; }
+                LockItems(t, "Offered"); t.Status = "Trading";
             }
-            else if (status is "Rejected" or "Cancelled") t.Status = status;
+            else if (status is "Rejected" or "Cancelled") { if (t.RequestedItemsLocked) UnlockItems(t, "Requested"); t.Status = status; }
             else return new(TradeStatus.NotPending, Detail: "This action is not valid for a pending trade.");
         }
         else if (t.Status == "Trading" && status == "Confirmed")
@@ -108,7 +121,7 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
             if (t.Status == "Pending") return new(TradeStatus.NotPending, Detail: "A pending request cannot be completed by Staff.");
             await TransferQuantitiesAsync(t, ct); UnlockItems(t); t.Status = "Completed";
         }
-        else { if (t.Status is "Trading" or "Disputed") UnlockItems(t); t.Status = "Cancelled"; }
+        else { if (t.Status == "Pending" && t.RequestedItemsLocked) UnlockItems(t, "Requested"); else if (t.Status is "Trading" or "Disputed") UnlockItems(t); t.Status = "Cancelled"; }
         t.UpdatedAtUtc = DateTime.UtcNow; t.StaffResolutionNote = note.Trim(); t.ResolvedByStaffUserName = staff;
         try { await db.SaveChangesAsync(ct); } catch (DbUpdateException) { return new(TradeStatus.Conflict); }
         return new(TradeStatus.Success, Map(t));
@@ -122,8 +135,8 @@ public class TradeService(ArcaneVaultDbContext db) : ITradeService
         return tracking ? q : q.AsNoTracking();
     }
     private static bool OriginalOwners(Trade t) => t.TradeItems.All(i => i.CollectionItem.UserName == (i.Side == "Offered" ? t.RequesterUserName : t.RecipientUserName));
-    private static void LockItems(Trade t) { foreach (var i in t.TradeItems) { i.CollectionItem.LockedQuantity += i.Quantity; i.CollectionItem.IsInTrade = true; } }
-    private static void UnlockItems(Trade t) { foreach (var i in t.TradeItems) { i.CollectionItem.LockedQuantity -= i.Quantity; i.CollectionItem.IsInTrade = i.CollectionItem.LockedQuantity > 0; } }
+    private static void LockItems(Trade t, string? side = null) { foreach (var i in t.TradeItems.Where(item => side is null || item.Side == side)) { i.CollectionItem.LockedQuantity += i.Quantity; i.CollectionItem.IsInTrade = true; } }
+    private static void UnlockItems(Trade t, string? side = null) { foreach (var i in t.TradeItems.Where(item => side is null || item.Side == side)) { i.CollectionItem.LockedQuantity -= i.Quantity; i.CollectionItem.IsInTrade = i.CollectionItem.LockedQuantity > 0; } }
     private async Task TransferQuantitiesAsync(Trade t, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
