@@ -162,16 +162,21 @@ public static class DbInitializer
         {
             var owner = definition.OwnerUserName.Trim();
             var typeId = definition.ItemTypeId.Trim().ToUpperInvariant();
-            var exists = await dbContext.CollectionItems.IgnoreQueryFilters().AnyAsync(item =>
+            var existingItem = await dbContext.CollectionItems.IgnoreQueryFilters().SingleOrDefaultAsync(item =>
                 item.UserName == owner && item.ItemTypeId == typeId
                 && item.Condition == definition.Condition && item.Rarity == definition.Rarity);
-            if (exists) continue;
+            if (existingItem is not null)
+            {
+                if (string.IsNullOrWhiteSpace(existingItem.ImagePath)) existingItem.ImagePath = definition.ImagePath;
+                continue;
+            }
 
             var item = new CollectionItem
             {
                 UserName = owner,
                 ItemTypeId = typeId,
                 ItemName = definition.ItemName.Trim(),
+                ImagePath = definition.ImagePath,
                 Condition = definition.Condition,
                 Rarity = definition.Rarity,
                 StartingQuantity = definition.StartingQuantity,
@@ -207,6 +212,7 @@ public static class DbInitializer
         public string OwnerUserName { get; init; } = string.Empty;
         public string ItemTypeId { get; init; } = string.Empty;
         public string ItemName { get; init; } = string.Empty;
+        public string? ImagePath { get; init; }
         public string Condition { get; init; } = "Good";
         public string Rarity { get; init; } = "Common";
         public int StartingQuantity { get; init; }

@@ -1,7 +1,7 @@
 @page
 @model ArcaneVault.Pages.TradeRequests.IndexModel
 @{ ViewData["Title"] = "Trade Requests"; }
-<div class="d-flex justify-content-between align-items-start mb-4"><div><h1>Trade Requests</h1><p class="text-muted">Accept a request to lock its quantities. Inventory changes only after both users confirm completion.</p></div><a asp-page="Create" class="btn btn-primary">Trade with a user</a></div>
+<div class="d-flex justify-content-between align-items-start mb-4"><div><h1>Trade Requests</h1><p class="text-muted">Requested quantities are locked when a request is sent. Offered quantities are locked after acceptance, and inventory changes only after both users confirm completion.</p></div><a asp-page="Create" class="btn btn-primary">Trade with a user</a></div>
 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 <ul class="nav nav-tabs mb-3" role="tablist"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending">Pending (@Model.Pending.Count)</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#incoming">Incoming (@Model.Incoming.Count)</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#outgoing">Sent (@Model.Outgoing.Count)</button></li></ul>
 <div class="tab-content">

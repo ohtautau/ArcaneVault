@@ -8,6 +8,7 @@
         <p class="mb-1">@(Model.IsIncoming ? $"Offered by {trade.RequesterUserName}" : $"Sent to {trade.RecipientUserName}")</p>
         @if (!string.IsNullOrWhiteSpace(trade.Message)) { <blockquote class="trade-message">@trade.Message</blockquote> }
         <small class="text-muted">Sent @trade.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</small>
+        <div class="mt-2"><a asp-page="/TradeRequests/Details" asp-route-id="@trade.TradeId" class="btn btn-sm btn-outline-primary">View details</a></div>
     </div>
     @if (trade.Status == "Pending") {
         <div class="trade-actions">

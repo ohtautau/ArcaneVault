@@ -13,6 +13,7 @@ public class Trade
     public WishlistItem? WishlistItem { get; set; }
     public string? Message { get; set; }
     public string Status { get; set; } = "Pending";
+    public bool RequestedItemsLocked { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
     public string? StaffResolutionNote { get; set; }
