@@ -19,15 +19,44 @@ public static class DbInitializer
     public static async Task InitializeAsync(IServiceProvider services)
     {
         var configuration = services.GetRequiredService<IConfiguration>();
-        await RepairMissingAnalyticsColumnsAsync(
-            configuration.GetConnectionString("ArcaneVaultDatabase"));
+        var connectionString = configuration.GetConnectionString("ArcaneVaultDatabase");
+        await ReconcilePartiallyAppliedAnalyticsMigrationAsync(connectionString);
         var dbContext = services.GetRequiredService<ArcaneVaultDbContext>();
         await dbContext.Database.MigrateAsync();
+        await RepairMissingAnalyticsColumnsAsync(connectionString);
 
         var passwordHasher = services
             .GetRequiredService<IPasswordHasher<ArcaneVaultUser>>();
         await SeedStaffAsync(dbContext, configuration, passwordHasher);
         await SeedDemoDataAsync(dbContext, configuration, passwordHasher);
+    }
+
+    private static async Task ReconcilePartiallyAppliedAnalyticsMigrationAsync(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString)) return;
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync();
+        if (!await TableExistsAsync(connection, "__EFMigrationsHistory")
+            || !await TableExistsAsync(connection, "ArcaneVaultUsers")
+            || !await TableExistsAsync(connection, "CollectionItems")) return;
+
+        const string migrationId = "20260811000000_AddAnalyticsTimestamps";
+        await using var historyCommand = connection.CreateCommand();
+        historyCommand.CommandText = "SELECT COUNT(*) FROM __EFMigrationsHistory WHERE MigrationId = $migrationId";
+        historyCommand.Parameters.AddWithValue("$migrationId", migrationId);
+        if (Convert.ToInt32(await historyCommand.ExecuteScalarAsync()) > 0) return;
+
+        var userColumnExists = await ColumnExistsAsync(connection, "ArcaneVaultUsers", "CreatedAtUtc");
+        var itemColumnExists = await ColumnExistsAsync(connection, "CollectionItems", "CreatedAtUtc");
+        if (!userColumnExists && !itemColumnExists) return;
+
+        await EnsureTimestampColumnAsync(connection, "ArcaneVaultUsers");
+        await EnsureTimestampColumnAsync(connection, "CollectionItems");
+        await using var markCommand = connection.CreateCommand();
+        markCommand.CommandText = "INSERT INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES ($migrationId, $productVersion)";
+        markCommand.Parameters.AddWithValue("$migrationId", migrationId);
+        markCommand.Parameters.AddWithValue("$productVersion", "10.0.0");
+        await markCommand.ExecuteNonQueryAsync();
     }
 
     private static async Task SeedStaffAsync(
@@ -195,22 +224,33 @@ public static class DbInitializer
 
     private static async Task EnsureTimestampColumnAsync(SqliteConnection connection, string tableName)
     {
-        await using var tableCommand = connection.CreateCommand();
-        tableCommand.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $tableName";
-        tableCommand.Parameters.AddWithValue("$tableName", tableName);
-        if (Convert.ToInt32(await tableCommand.ExecuteScalarAsync()) == 0) return;
+        if (!await TableExistsAsync(connection, tableName)) return;
 
+        if (await ColumnExistsAsync(connection, tableName, "CreatedAtUtc")) return;
+
+        await using var repairCommand = connection.CreateCommand();
+        repairCommand.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"CreatedAtUtc\" TEXT NOT NULL DEFAULT '2026-08-11 00:00:00'";
+        await repairCommand.ExecuteNonQueryAsync();
+    }
+
+    private static async Task<bool> TableExistsAsync(SqliteConnection connection, string tableName)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $tableName";
+        command.Parameters.AddWithValue("$tableName", tableName);
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+    }
+
+    private static async Task<bool> ColumnExistsAsync(
+        SqliteConnection connection, string tableName, string columnName)
+    {
         await using var columnsCommand = connection.CreateCommand();
         columnsCommand.CommandText = $"PRAGMA table_info(\"{tableName}\")";
         await using var reader = await columnsCommand.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            if (string.Equals(reader.GetString(1), "CreatedAtUtc", StringComparison.OrdinalIgnoreCase)) return;
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase)) return true;
         }
-        await reader.DisposeAsync();
-
-        await using var repairCommand = connection.CreateCommand();
-        repairCommand.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"CreatedAtUtc\" TEXT NOT NULL DEFAULT '2026-08-11 00:00:00'";
-        await repairCommand.ExecuteNonQueryAsync();
+        return false;
     }
 }
