@@ -5,6 +5,7 @@
 using ArcaneVault.Data;
 using ArcaneVault.Models.Entities;
 using ArcaneVault.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        Path.Combine(builder.Environment.ContentRootPath, "Data", "DataProtection-Keys")));
 builder.Services.AddScoped<IPasswordHasher<ArcaneVaultUser>, PasswordHasher<ArcaneVaultUser>>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryApiClient, CategoryApiClient>();
