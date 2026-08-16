@@ -27,6 +27,7 @@ coverage/
 *.log
 *.db-shm
 *.db-wal
+/Data/DataProtection-Keys/
 .DS_Store
 Thumbs.db
 
